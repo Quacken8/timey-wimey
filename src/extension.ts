@@ -9,7 +9,6 @@ var file: fs.WriteStream | undefined = undefined;
 
 // TODO think about how to handle pushing to git: cuz then the user hasnt ended yet. Maybe we can force the end to run before git add commit and then make another start after git finishes? 
 // TODO change acticvation to workspace opened
-// FIXME exclude the timey folder from the tracking
 // TODO use the config to auto include the timey file in gitignore
 
 var userName: string | undefined = undefined;
@@ -17,6 +16,9 @@ var userName: string | undefined = undefined;
 const progressTimer = new Timer(working_INTERVAl, () => recordInProgress(file!));
 const inactiveTimer = new Timer(INACTIVE_INTERVAL, () => recordEnd(file!));
 
+const statusBarIcon = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+statusBarIcon.tooltip = 'Timey Wimey';
+statusBarIcon.text = `$(clock) timeyy`;
 
 function checkForUnfinishedData() {
 
@@ -125,3 +127,4 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
 	recordEnd(file!);
 }
+
