@@ -94,12 +94,24 @@ export function activate(context: vscode.ExtensionContext) {
 
 	filePath += `/${userName}.txt`;
 	file = fs.createWriteStream(filePath, { flags: 'a+' });
-	file.write('uwu'); // create file if doesnt exist
+	try {
+		fs.accessSync(filePath, fs.constants.F_OK);
+		console.log('Timey file already exists');
+	} catch (err) {
+		// File doesn't exist, create it
+		try {
+			fs.writeFileSync(filePath, '');
+			console.log('Timey file created successfully.');
+		} catch (err) {
+			console.error('Error creating timey file:', err);
+		}
+	}
 
 	checkForUnfinishedData();
 
 	// listen to input
 	vscode.workspace.onDidChangeTextDocument(event => {
+		if (event.document.uri.path === filePath) { return; } // make sure the editing of the timey file doesnt look like user activity
 		if (!currentlyActive) {
 			recordStart(file!);
 		}
