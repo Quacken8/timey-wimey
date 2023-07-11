@@ -13,7 +13,7 @@ var file: fs.WriteStream | undefined = undefined;
 
 var userName: string | undefined = undefined;
 
-const progressTimer = new Timer(working_INTERVAl, () => recordInProgress(file!));
+const progressTimer = new Timer(working_INTERVAl, () => recordWorking(file!));
 const inactiveTimer = new Timer(INACTIVE_INTERVAL, () => recordEnd(file!));
 
 const statusBarIcon = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -39,7 +39,7 @@ function checkForUnfinishedData() {
 
 }
 
-function recordInProgress(file: fs.WriteStream) {
+function recordWorking(file: fs.WriteStream) {
 	// append working to file with timestamp
 
 	const timestamp = new Date().getTime();
