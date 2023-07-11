@@ -3,8 +3,8 @@ import * as fs from 'fs';
 import { Timer } from './timer';
 
 // TODO get from configuration
-const INACTIVE_INTERVAL =    vscode.workspace.getConfiguration('timey').get('inactivityInterval') as number; // how long till user considered inactive
-const IN_PROGRESS_INTERVAl = vscode.workspace.getConfiguration('timey').get('sessionActiveInterval') as number; // how long till check no unexpected crash
+const INACTIVE_INTERVAL =    1000*(vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
+const IN_PROGRESS_INTERVAl = 1000*60*(vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
 const FILE_PATH = 'timey.txt';
 
 // TODO think about how to handle pushing to git: cuz then the user hasnt ended yet. Maybe we can force the end to run before git add commit and then make another start after git finishes? 
@@ -60,7 +60,7 @@ function recordInProgress() {
 	const timestamp = new Date().getTime();
 	const progressLine = `\n${timestamp} ${userName} in_progress`;
 
-	console.debug(progressLine);
+	console.debug(progressLine);// TODO REMOVE
 
 	fs.appendFile(FILE_PATH, progressLine, (err) => {
 		if (err) console.error('Error saving progress time: ' + err);
@@ -76,7 +76,7 @@ function recordEnd() {
 	const timestamp = new Date().getTime();
 	const endLine = `\n${timestamp} ${userName} end`;
 
-	console.debug(endLine);
+	console.debug(endLine);// TODO REMOVE
 
 	fs.appendFile(FILE_PATH, endLine, (err) => {
 		if (err) console.error('Error saving end time: ' + err);
@@ -92,7 +92,7 @@ function recordStart() {
 	const timestamp = new Date().getTime();
 	const startLine = `\n${timestamp} ${userName} start`;
 
-	console.debug(startLine);
+	console.debug(startLine); // TODO REMOVE
 
 	fs.appendFile(FILE_PATH, startLine, (err) => {
 		if (err) console.error('Error saving start time: ' + err);
@@ -105,7 +105,7 @@ function recordStart() {
 export function activate(context: vscode.ExtensionContext) {
 	vscode.window.showInformationMessage('Hello World from vscode-extensions!');
 
-	userName = 'idkLol'; //TODO vscode.workspace.getConfiguration('timey').get('userEmail');
+	userName = 'idkLol'; //TODO prolly wont be possible from vscode api? maybe from config?
 
 	initializeFile();
 	
