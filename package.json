@@ -9,15 +9,27 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "timey-wimey.helloWorld",
-        "title": "Hello World"
+    "commands": [],
+    "configuration": {
+      "title": "Timey Wimey",
+      "properties": {
+        "timeyWimey.inactivityInterval": {
+          "type": "number",
+          "default": 30,
+          "description": "The number of seconds of inactivity before the timer stops"
+        },
+        "timeyWimey.sessionActiveInterval": {
+          "type": "number",
+          "default": 3,
+          "description": "The number of minutes after which the session is checked for unexpected quits"
+        }
       }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
