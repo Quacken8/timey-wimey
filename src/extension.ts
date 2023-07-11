@@ -3,13 +3,13 @@ import * as fs from 'fs';
 import { Timer } from './timer';
 
 // TODO get from configuration
-const INACTIVE_INTERVAL = 1000 * 3; // how long till user considered inactive
-const IN_PROGRESS_INTERVAl = 1000 * 1; // how long till check no unexpected crash
+const INACTIVE_INTERVAL =    vscode.workspace.getConfiguration('timey').get('inactivityInterval') as number; // how long till user considered inactive
+const IN_PROGRESS_INTERVAl = vscode.workspace.getConfiguration('timey').get('sessionActiveInterval') as number; // how long till check no unexpected crash
 const FILE_PATH = 'timey.txt';
 
 // TODO think about how to handle pushing to git: cuz then the user hasnt ended yet. Maybe we can force the end to run before git add commit and then make another start after git finishes? 
 
-var userEmail: string | undefined = undefined;
+var userName: string | undefined = undefined;
 
 const progressTimer = new Timer(IN_PROGRESS_INTERVAl, recordInProgress);
 const inactiveTimer = new Timer(INACTIVE_INTERVAL, recordEnd);
@@ -58,7 +58,7 @@ function recordInProgress() {
 	// append in_progress to file with timestamp
 
 	const timestamp = new Date().getTime();
-	const progressLine = `\n${timestamp} ${userEmail} in_progress`;
+	const progressLine = `\n${timestamp} ${userName} in_progress`;
 
 	console.debug(progressLine);
 
@@ -74,7 +74,7 @@ function recordEnd() {
 	// append end to file with timestamp
 
 	const timestamp = new Date().getTime();
-	const endLine = `\n${timestamp} ${userEmail} end`;
+	const endLine = `\n${timestamp} ${userName} end`;
 
 	console.debug(endLine);
 
@@ -90,7 +90,7 @@ function recordEnd() {
 function recordStart() {
 	// append start to file with timestamp
 	const timestamp = new Date().getTime();
-	const startLine = `\n${timestamp} ${userEmail} start`;
+	const startLine = `\n${timestamp} ${userName} start`;
 
 	console.debug(startLine);
 
@@ -105,7 +105,7 @@ function recordStart() {
 export function activate(context: vscode.ExtensionContext) {
 	vscode.window.showInformationMessage('Hello World from vscode-extensions!');
 
-	userEmail = 'idkLol'; //TODO vscode.workspace.getConfiguration('timey').get('userEmail');
+	userName = 'idkLol'; //TODO vscode.workspace.getConfiguration('timey').get('userEmail');
 
 	initializeFile();
 	
