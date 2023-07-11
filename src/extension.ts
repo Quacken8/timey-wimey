@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import { Timer } from './timer';
 
 const INACTIVE_INTERVAL = 1000 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
-const IN_PROGRESS_INTERVAl = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
+const working_INTERVAl = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
 var filePath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
 var file: fs.WriteStream | undefined = undefined;
 
@@ -14,7 +14,7 @@ var file: fs.WriteStream | undefined = undefined;
 
 var userName: string | undefined = undefined;
 
-const progressTimer = new Timer(IN_PROGRESS_INTERVAl, () => recordInProgress(file!));
+const progressTimer = new Timer(working_INTERVAl, () => recordInProgress(file!));
 const inactiveTimer = new Timer(INACTIVE_INTERVAL, () => recordEnd(file!));
 
 
@@ -23,7 +23,7 @@ function checkForUnfinishedData() {
 	// look at last line of file
 	const data = fs.readFileSync(filePath!, 'utf8');
 
-	if (data.endsWith('in_progress')) {
+	if (data.endsWith('working')) {
 		// unexpected exit, append end
 
 		const lines = data.split('\n');
@@ -38,10 +38,10 @@ function checkForUnfinishedData() {
 }
 
 function recordInProgress(file: fs.WriteStream) {
-	// append in_progress to file with timestamp
+	// append working to file with timestamp
 
 	const timestamp = new Date().getTime();
-	const progressLine = `\n${timestamp} ${userName} in_progress`;
+	const progressLine = `\n${timestamp} working`;
 
 	console.debug(progressLine);// TODO REMOVE
 
@@ -55,7 +55,7 @@ function recordEnd(file: fs.WriteStream) {
 	// append end to file with timestamp
 
 	const timestamp = new Date().getTime();
-	const endLine = `\n${timestamp} ${userName} end`;
+	const endLine = `\n${timestamp} end`;
 
 	console.debug(endLine);// TODO REMOVE
 
@@ -69,7 +69,7 @@ function recordEnd(file: fs.WriteStream) {
 function recordStart(file: fs.WriteStream) {
 	// append start to file with timestamp
 	const timestamp = new Date().getTime();
-	const startLine = `\n${timestamp} ${userName} start`;
+	const startLine = `\n${timestamp} start`;
 
 	console.debug(startLine); // TODO REMOVE
 
