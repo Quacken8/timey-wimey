@@ -105,7 +105,7 @@ function recordStart() {
 export function activate(context: vscode.ExtensionContext) {
 	vscode.window.showInformationMessage('Hello World from vscode-extensions!');
 
-	userName = 'idkLol'; //TODO prolly wont be possible from vscode api? maybe from config?
+	userName = 'userName'; //TODO prolly wont be possible from vscode api? maybe from config?
 
 	initializeFile();
 	
