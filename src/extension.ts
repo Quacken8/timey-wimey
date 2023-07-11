@@ -2,59 +2,42 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { Timer } from './timer';
 
-// TODO get from configuration
-const INACTIVE_INTERVAL =    1000*(vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
-const IN_PROGRESS_INTERVAl = 1000*60*(vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
-const FILE_PATH = 'timey.txt';
+const INACTIVE_INTERVAL = 1000 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
+const IN_PROGRESS_INTERVAl = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
+var filePath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
+var file: fs.WriteStream | undefined = undefined;
 
 // TODO think about how to handle pushing to git: cuz then the user hasnt ended yet. Maybe we can force the end to run before git add commit and then make another start after git finishes? 
+// TODO change acticvation to workspace opened
+// FIXME exclude the timey folder from the tracking
+// TODO use the config to auto include the timey file in gitignore
 
 var userName: string | undefined = undefined;
 
-const progressTimer = new Timer(IN_PROGRESS_INTERVAl, recordInProgress);
-const inactiveTimer = new Timer(INACTIVE_INTERVAL, recordEnd);
+const progressTimer = new Timer(IN_PROGRESS_INTERVAl, () => recordInProgress(file!));
+const inactiveTimer = new Timer(INACTIVE_INTERVAL, () => recordEnd(file!));
 
 
-function initializeFile() {
+function checkForUnfinishedData() {
 
-	// check if file exists
-	fs.access(FILE_PATH, fs.constants.F_OK, (err) => {
-		if (err) {
-			// File doesn't exist, so create it
-			fs.writeFile(FILE_PATH, '', (err) => {
-				if (err) {
-					console.error('An error occurred while creating the file:', err);
-				} else {
-					console.log('File created successfully.');
-				}
-			});
-		}
-	});
+	// look at last line of file
+	const data = fs.readFileSync(filePath!, 'utf8');
 
-	// check if file ends with in_progress
-	fs.readFile(FILE_PATH, 'utf8', (err, data) => {
-		if (err) {
-			console.error('An error occurred while reading the file:', err);
-			return;
-		}
+	if (data.endsWith('in_progress')) {
+		// unexpected exit, append end
 
-		if (data.endsWith('in_progress')) {
-			// unexpected exit, append end
+		const lines = data.split('\n');
+		const lastLine = lines[lines.length - 1];
+		const timestamp = lastLine.split(' ')[0];
+		const endMail = lastLine.split(' ')[1];
+		const endLine = `\n${timestamp} ${endMail} end`;
 
-			const lines = data.split('\n');
-			const lastLine = lines[lines.length - 1];
-			const timestamp = lastLine.split(' ')[0];
-			const endMail = lastLine.split(' ')[1];
-			const endLine = `\n${timestamp} ${endMail} end`;
+		fs.appendFileSync(filePath!, endLine); // NOTE im using sync but prolly cuz im kinda scared of async? is it a good idea?
+	}
 
-			fs.appendFile(FILE_PATH, endLine, (err) => {
-				if (err) console.error('Error saving end time: ' + err);
-			});
-		}
-	});
 }
 
-function recordInProgress() {
+function recordInProgress(file: fs.WriteStream) {
 	// append in_progress to file with timestamp
 
 	const timestamp = new Date().getTime();
@@ -62,15 +45,13 @@ function recordInProgress() {
 
 	console.debug(progressLine);// TODO REMOVE
 
-	fs.appendFile(FILE_PATH, progressLine, (err) => {
-		if (err) console.error('Error saving progress time: ' + err);
-	});
+	file.write(progressLine);
 
 }
 
 var currentlyActive = false;
 
-function recordEnd() {
+function recordEnd(file: fs.WriteStream) {
 	// append end to file with timestamp
 
 	const timestamp = new Date().getTime();
@@ -78,25 +59,22 @@ function recordEnd() {
 
 	console.debug(endLine);// TODO REMOVE
 
-	fs.appendFile(FILE_PATH, endLine, (err) => {
-		if (err) console.error('Error saving end time: ' + err);
-	});
+	file.write(endLine);
 
 	currentlyActive = false;
 	inactiveTimer.stop();
 	progressTimer.stop();
 }
 
-function recordStart() {
+function recordStart(file: fs.WriteStream) {
 	// append start to file with timestamp
 	const timestamp = new Date().getTime();
 	const startLine = `\n${timestamp} ${userName} start`;
 
 	console.debug(startLine); // TODO REMOVE
 
-	fs.appendFile(FILE_PATH, startLine, (err) => {
-		if (err) console.error('Error saving start time: ' + err);
-	});
+	file.write(startLine);
+
 	progressTimer.start();
 	inactiveTimer.start();
 	currentlyActive = true;
@@ -107,12 +85,23 @@ export function activate(context: vscode.ExtensionContext) {
 
 	userName = 'userName'; //TODO prolly wont be possible from vscode api? maybe from config?
 
-	initializeFile();
-	
+	//create folder if doesnt exist
+	const folderExists = fs.existsSync(filePath);
+	if (!folderExists) {
+		fs.mkdirSync(filePath, { recursive: true });
+	}
+
+
+	filePath += `/${userName}.txt`;
+	file = fs.createWriteStream(filePath, { flags: 'a+' });
+	file.write('uwu'); // create file if doesnt exist
+
+	checkForUnfinishedData();
+
 	// listen to input
 	vscode.workspace.onDidChangeTextDocument(event => {
 		if (!currentlyActive) {
-			recordStart();
+			recordStart(file!);
 		}
 		else {
 			inactiveTimer.reset();
@@ -122,5 +111,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-	recordEnd();
+	recordEnd(file!);
 }
