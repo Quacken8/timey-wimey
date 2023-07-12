@@ -2,6 +2,7 @@ import { defaultCachePath } from '@vscode/test-electron/out/download';
 import { assert } from 'console';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
+import { removeWorkingEntries } from './fileIO';
 
 // returns a list of all file names in a folder
 function getFileNamesInFolder(folderPath: string): string[] {
@@ -53,7 +54,7 @@ interface CodingTime {
 
 // calculates time spent coding in hours for today, this week, this month, and last month per user
 export function calculateTime(folderUri: string): CodingTime[] {
-    // search .vscode/timewimey for all text files
+
     const filenames = getFileNamesInFolder(folderUri);
 
     const today = new Date();
@@ -67,6 +68,8 @@ export function calculateTime(folderUri: string): CodingTime[] {
     // for each file make codingTime
     for (const filename of filenames) {
         const userName = filename.split('/')[filename.split('/').length - 1].split('.')[0]
+
+        removeWorkingEntries(filename);
 
         const fileContents = fs.readFileSync(filename, 'utf8').split('\n');
 
