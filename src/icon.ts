@@ -5,7 +5,6 @@ export class TimeyIcon {
 
     constructor() {
         this.icon = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-        this.icon.command = "vscode.window.showWarningMessage('Timey Wimey')";
         this.icon.text = '👀';
         this.icon.tooltip = 'Timey Wimey';
         this.icon.show();

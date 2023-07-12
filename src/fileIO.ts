@@ -34,3 +34,22 @@ export function recordStart(file: fs.WriteStream) {
 
     file.write(startLine);
 }
+
+export function checkForUnfinishedData(filePath: string) {
+
+    // look at last line of file
+    const data = fs.readFileSync(filePath!, 'utf8');
+
+    if (data.endsWith('working')) {
+        // unexpected exit, append end
+
+        const lines = data.split('\n');
+        const lastLine = lines[lines.length - 1];
+        const timestamp = lastLine.split(' ')[0];
+        const endMail = lastLine.split(' ')[1];
+        const endLine = `\n${timestamp} ${endMail} end`;
+
+        fs.appendFileSync(filePath!, endLine); // NOTE im using sync but prolly cuz im kinda scared of async? is it a good idea?
+    }
+
+}

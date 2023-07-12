@@ -52,10 +52,10 @@ interface CodingTime {
 }
 
 // calculates time spent coding in hours for today, this week, this month, and last month per user
-export function calculateTime(folderUri: string) : CodingTime[] {
+export function calculateTime(folderUri: string): CodingTime[] {
     // search .vscode/timewimey for all text files
     const filenames = getFileNamesInFolder(folderUri);
-    
+
     const today = new Date();
     const todayUTX = getTodayUTX(today);
     const thisMondayUTX = getMondayUTX(today);
@@ -66,8 +66,8 @@ export function calculateTime(folderUri: string) : CodingTime[] {
 
     // for each file make codingTime
     for (const filename of filenames) {
-        const userName = filename.split('.')[0]
-        
+        const userName = filename.split('/')[filename.split('/').length - 1].split('.')[0]
+
         const fileContents = fs.readFileSync(filename, 'utf8').split('\n');
 
         const starts = fileContents.filter(line => line.endsWith('start'));
@@ -112,15 +112,14 @@ export function calculateTime(folderUri: string) : CodingTime[] {
 
 }
 
-export function prettyOutputTimeCalc(folderURI: string) {
+export function prettyOutputTimeCalc(folderURI: string): string {
 
     const data = calculateTime(folderURI);
     var stringData = "";
-    
-    for (const datapoint of data) {
-        stringData += `#${datapoint.userName}\nToday:\t${datapoint.today} hours\nThis week:\t${datapoint.thisWeek} hours\nThis month:\t${datapoint.thisMonth} hours\nLast month:\t${datapoint.lastMonth}\n=================\n`;
-    }
-    console.log(stringData);
 
-    // vscode.window.showTextDocument(data);
+    for (const datapoint of data) {
+        stringData += `#${datapoint.userName}\nToday:\t\t${datapoint.today.toFixed(2)} hours\nThis week:\t${datapoint.thisWeek.toFixed(2)} hours\nThis month:\t${datapoint.thisMonth.toFixed(2)} hours\nLast month:\t${datapoint.lastMonth.toFixed(2)}\n=================\n`;
+    }
+
+    return stringData;
 }

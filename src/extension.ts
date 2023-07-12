@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { Timer } from './timer';
-import { recordWorking, recordEnd, recordStart } from './fileIO';
+import { recordWorking, recordEnd, recordStart, checkForUnfinishedData } from './fileIO';
 import { TimeyIcon } from './icon';
+import { prettyOutputTimeCalc } from './timeCalculator';
 
 const inactiveInterval = 1000 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
 const workingInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
@@ -23,25 +24,6 @@ const inactiveTimer = new Timer(inactiveInterval, () => {
 });
 
 
-function checkForUnfinishedData() {
-
-	// look at last line of file
-	const data = fs.readFileSync(filePath!, 'utf8');
-
-	if (data.endsWith('working')) {
-		// unexpected exit, append end
-
-		const lines = data.split('\n');
-		const lastLine = lines[lines.length - 1];
-		const timestamp = lastLine.split(' ')[0];
-		const endMail = lastLine.split(' ')[1];
-		const endLine = `\n${timestamp} ${endMail} end`;
-
-		fs.appendFileSync(filePath!, endLine); // NOTE im using sync but prolly cuz im kinda scared of async? is it a good idea?
-	}
-
-}
-
 var currentlyActive = false;
 
 
@@ -53,6 +35,29 @@ export function activate(context: vscode.ExtensionContext) {
 	if (!folderExists) {
 		fs.mkdirSync(filePath, { recursive: true });
 	}
+
+
+	let disposable = vscode.commands.registerCommand('timeyWimey.showStats', () => {
+		const documentUri = vscode.Uri.parse('virtual:stats.txt');
+		const documentContent = prettyOutputTimeCalc(vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey');
+
+		vscode.workspace.registerTextDocumentContentProvider('virtual', {
+			provideTextDocumentContent(uri: vscode.Uri): string {
+				if (uri.path === documentUri.path) {
+					return documentContent;
+				}
+				return '';
+			}
+		});
+
+		vscode.workspace.openTextDocument(documentUri).then((doc) => {
+			vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
+		});
+	});
+
+	icon.icon.command = "timeyWimey.showStats";
+	context.subscriptions.push(disposable);
+
 
 	filePath += `/${userName}.txt`;
 	file = fs.createWriteStream(filePath, { flags: 'a+' });
@@ -81,7 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	checkForUnfinishedData();
+	checkForUnfinishedData(filePath);
 
 	// listen to input
 	vscode.workspace.onDidChangeTextDocument(event => {

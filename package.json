@@ -14,7 +14,12 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [],
+    "commands": [
+      {
+        "command": "timeyWimey.showStats",
+        "title": "Show time stats"
+      }
+    ],
     "configuration": {
       "title": "Timey Wimey",
       "properties": {
