@@ -1,6 +1,8 @@
 # Timey Wimey - the simple solution to time tracking
 
-Timey Wimey is a VSCode extension that automatically tracks time spent coding per user per project.
+Timey Wimey is a simple VSCode extension that automatically tracks time spent coding per user per project.
+It requires **no** sign up nor any payment like *some* other extensions AND keeps the data
+human-readable and local.
 
 ## Features
 Timey Wimey looks for user input. Whenever they start typing, 
