@@ -12,7 +12,7 @@ const includeInGitIgnore = vscode.workspace.getConfiguration('timeyWimey').get('
 const localDirPath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
 var thisUsersFile: fs.WriteStream | undefined = undefined;
 
-var userName: string;	//FIXME prolly wont be possible from vscode api? maybe from config?
+var userName = vscode.workspace.getConfiguration('timeyWimey').get('userName') as string;
 var icon = new TimeyIcon();
 
 const progressTimer = new Timer(workingInterval, () => recordWorking(thisUsersFile!));
@@ -30,7 +30,9 @@ var currentlyActive = false;
 
 export async function activate(context: vscode.ExtensionContext) {
 	// check for username
-	userName = await getOrPromptUserName()
+	if (userName === "") {
+		userName = await promptUserName();
+	}
 
 	//create local folder if doesnt exist
 	const folderExists = fs.existsSync(localDirPath);

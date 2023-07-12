@@ -46,6 +46,11 @@
           "type": "boolean",
           "default": true,
           "description": "Whether to automatically include your work stats file in the .gitignore file"
+        },
+        "timeyWimey.userName": {
+          "type": "string",
+          "default": "",
+          "description": "The name of the user. If not set, the extension will prompt you to enter it"
         }
       }
     }
@@ -63,8 +68,6 @@
     "test-compile": "tsc -p ./",
     "package": "pnpm vsce package --no-dependencies",
     "publish": "pnpm vsce publish --no-dependencies"
-    
-
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
