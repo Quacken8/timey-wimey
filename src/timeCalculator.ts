@@ -3,6 +3,7 @@ import { assert } from 'console';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { removeWorkingEntries } from './fileIO';
+import { getProjectPaths } from './userInfo';
 
 // returns a list of all file names in a folder
 function getFileNamesInFolder(folderPath: string): string[] {
@@ -129,5 +130,31 @@ export function prettyOutputTimeCalc(folderURI: string): string {
         stringData += `#${datapoint.userName}\nToday:\t\t${datapoint.today.toFixed(2)} hours\nThis week:\t${datapoint.thisWeek.toFixed(2)} hours\nThis month:\t${datapoint.thisMonth.toFixed(2)} hours\nLast month:\t${datapoint.lastMonth.toFixed(2)}\n=================\n`;
     }
 
+    return stringData;
+}
+
+export function prettyOutputTimeCalcForUser(folderURI: string, userName: string): string {
+
+    const data = calculateTime(folderURI);
+
+    var stringData = "";
+
+    for (const datapoint of data) {
+        if (datapoint.userName === userName) {
+            stringData += `#${datapoint.userName}\nToday:\t\t${datapoint.today.toFixed(2)} hours\nThis week:\t${datapoint.thisWeek.toFixed(2)} hours\nThis month:\t${datapoint.thisMonth.toFixed(2)} hours\nLast month:\t${datapoint.lastMonth.toFixed(2)}\n=================\n`;
+        }
+    }
+
+    return stringData;
+}
+
+export function prettyOutputTimeCalcForUserAllDirs(userName: string): string {
+    const allDirs = getProjectPaths();
+    var stringData = "";
+
+    for (const dir of allDirs) {
+        stringData += `#In ${dir}:\n`;
+        stringData += prettyOutputTimeCalcForUser(dir, userName);
+    }
     return stringData;
 }

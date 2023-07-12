@@ -18,6 +18,10 @@
       {
         "command": "timeyWimey.showStats",
         "title": "Show time stats"
+      },
+      {
+        "command": "timeyWimey.showGlobalUserStats",
+        "title": "Show curent user's stats across all local tracked projects"
       }
     ],
     "configuration": {

@@ -3,20 +3,21 @@ import * as fs from 'fs';
 import { Timer } from './timer';
 import { recordWorking, recordEnd, recordStart, checkForUnfinishedData } from './fileIO';
 import { TimeyIcon } from './icon';
-import { prettyOutputTimeCalc } from './timeCalculator';
+import { prettyOutputTimeCalc, prettyOutputTimeCalcForUserAllDirs } from './timeCalculator';
+import { createProjectPathsFile, getOrPromptUserName, getUserName, promptUserName, recordProjectPathIfNotExists } from './userInfo';
 
 const inactiveInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
 const workingInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
 const includeInGitIgnore = vscode.workspace.getConfiguration('timeyWimey').get('includeInGitIgnore') as boolean;
-var filePath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
-var file: fs.WriteStream | undefined = undefined;
+var localDirPath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
+var thisUsersFile: fs.WriteStream | undefined = undefined;
 
-var userName = "userName";	//FIXME prolly wont be possible from vscode api? maybe from config?
+var userName: string;	//FIXME prolly wont be possible from vscode api? maybe from config?
 var icon = new TimeyIcon();
 
-const progressTimer = new Timer(workingInterval, () => recordWorking(file!));
+const progressTimer = new Timer(workingInterval, () => recordWorking(thisUsersFile!));
 const inactiveTimer = new Timer(inactiveInterval, () => {
-	recordEnd(file!);
+	recordEnd(thisUsersFile!);
 	currentlyActive = false;
 	inactiveTimer.stop();
 	progressTimer.stop();
@@ -28,18 +29,24 @@ var currentlyActive = false;
 
 
 export function activate(context: vscode.ExtensionContext) {
-	vscode.window.showInformationMessage('  👀   Timey Wimey is tracking your code time here!');
+	// check for username
+	userName = getOrPromptUserName()
 
-	//create folder if doesnt exist
-	const folderExists = fs.existsSync(filePath);
+	//create local folder if doesnt exist
+	const folderExists = fs.existsSync(localDirPath);
 	if (!folderExists) {
-		fs.mkdirSync(filePath, { recursive: true });
+		fs.mkdirSync(localDirPath, { recursive: true });
 	}
+	const localFolderPath = localDirPath;
 
+	//check for home projects folder
+	createProjectPathsFile();
+	recordProjectPathIfNotExists(localDirPath);
 
+	// register showStats command
 	let disposable = vscode.commands.registerCommand('timeyWimey.showStats', () => {
 		const documentUri = vscode.Uri.parse('virtual:stats.txt');
-		const documentContent = prettyOutputTimeCalc(vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey');
+		const documentContent = prettyOutputTimeCalc(localDirPath);
 
 		vscode.workspace.registerTextDocumentContentProvider('virtual', {
 			provideTextDocumentContent(uri: vscode.Uri): string {
@@ -58,16 +65,34 @@ export function activate(context: vscode.ExtensionContext) {
 	icon.icon.command = "timeyWimey.showStats";
 	context.subscriptions.push(disposable);
 
+	// register showGlobalUserStats command
+	disposable = vscode.commands.registerCommand('timeyWimey.showGlobalUserStats', () => {
+		const documentUri = vscode.Uri.parse('virtual:globalUserStats.txt');
+		const documentContent = prettyOutputTimeCalcForUserAllDirs(userName);
+		vscode.workspace.registerTextDocumentContentProvider('virtual', {
+			provideTextDocumentContent(uri: vscode.Uri): string {
+				if (uri.path === documentUri.path) {
+					return documentContent;
+				}
+				return '';
+			}
+		});
 
-	filePath += `/${userName}.txt`;
-	file = fs.createWriteStream(filePath, { flags: 'a+' });
+		vscode.workspace.openTextDocument(documentUri).then((doc) => {
+			vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
+		});
+	});
+
+
+	localDirPath += `/${userName}.txt`;
+	thisUsersFile = fs.createWriteStream(localDirPath, { flags: 'a+' });
 	try {
-		fs.accessSync(filePath, fs.constants.F_OK);
+		fs.accessSync(localDirPath, fs.constants.F_OK);
 		console.log('Timey file already exists');
 	} catch (err) {
 		// File doesn't exist, create it
 		try {
-			fs.writeFileSync(filePath, '');
+			fs.writeFileSync(localDirPath, '');
 			if (includeInGitIgnore) {
 
 				// add it to gitignore
@@ -86,13 +111,13 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	checkForUnfinishedData(filePath);
+	checkForUnfinishedData(localDirPath);
 
 	// listen to input
 	vscode.workspace.onDidChangeTextDocument(event => {
-		if (event.document.uri.path === filePath) { return; } // make sure the editing of the timey file doesnt look like user activity
+		if (event.document.uri.path === localDirPath) { return; } // make sure the editing of the timey file doesnt look like user activity
 		if (!currentlyActive) {
-			recordStart(file!);
+			recordStart(thisUsersFile!);
 
 			progressTimer.start();
 			inactiveTimer.start();
@@ -104,11 +129,12 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	vscode.window.showInformationMessage('\t👀\tTimey Wimey is tracking your code time here!');
 }
 
 export function deactivate() {
 	if (currentlyActive) {
-		recordEnd(file!);
+		recordEnd(thisUsersFile!);
 		currentlyActive = false;
 		inactiveTimer.stop();
 		progressTimer.stop();
