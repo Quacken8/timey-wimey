@@ -1,5 +1,5 @@
 {
-  "name": "@quacken8/timey-wimey",
+  "name": "timey-wimey-tracker",
   "displayName": "Timey Wimey",
   "description": "Extension that keeps track of time spent coding per user per project",
   "version": "0.0.1",
