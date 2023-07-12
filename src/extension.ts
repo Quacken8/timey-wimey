@@ -45,8 +45,6 @@ function recordWorking(file: fs.WriteStream) {
 	const timestamp = new Date().getTime();
 	const progressLine = `\n${timestamp} working`;
 
-	console.debug(progressLine);// TODO REMOVE
-
 	file.write(progressLine);
 
 }
@@ -59,8 +57,6 @@ function recordEnd(file: fs.WriteStream) {
 	const timestamp = new Date().getTime();
 	const endLine = `\n${timestamp} end`;
 
-	console.debug(endLine);// TODO REMOVE
-
 	file.write(endLine);
 
 	currentlyActive = false;
@@ -72,8 +68,6 @@ function recordStart(file: fs.WriteStream) {
 	// append start to file with timestamp
 	const timestamp = new Date().getTime();
 	const startLine = `\n${timestamp} start`;
-
-	console.debug(startLine); // TODO REMOVE
 
 	file.write(startLine);
 
