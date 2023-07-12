@@ -72,7 +72,11 @@ export function calculateTime(folderUri: string): CodingTime[] {
 
         const starts = fileContents.filter(line => line.endsWith('start'));
         const ends = fileContents.filter(line => line.endsWith('end'));
-
+        if (starts.length === ends.length + 1) {
+            // the user hasnt ended their session, so lets artificially add an end
+            const rightNow = new Date().getTime();
+            ends.push(`${userName}  ${rightNow} end`);
+        }
         assert(starts.length === ends.length, "There is a different number of start times to end times in " + filename + "!");
 
         var lastMonthHours = 0;
@@ -105,6 +109,7 @@ export function calculateTime(folderUri: string): CodingTime[] {
             thisMonth: thisMonthHours,
             lastMonth: lastMonthHours
         });
+        console.log(toReturn);
     }
 
     // return codingTime
