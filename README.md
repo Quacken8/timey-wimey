@@ -11,7 +11,8 @@ inactive and the time get's recorded.
 
 An icon in the bottom right shows the current activity status and if clicked on
 will generate time stats: number of hours worked on this project per user over 
-today, this week, this month and last month.
+today, this week, this month and last month. Via the command pallette you can 
+also list time you spent on all of your tracked projects.
 
 ![Gif showing the usage of the extension!](usage.gif)
 
