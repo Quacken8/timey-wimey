@@ -6,6 +6,10 @@
   "engines": {
     "vscode": "^1.80.0"
   },
+  "repository": {
+  "type": "git",
+  "url": "https://github.com/Quacken8/timey-wimey"
+  },
   "categories": [
     "Other"
   ],
@@ -17,11 +21,11 @@
     "commands": [
       {
         "command": "timeyWimey.showStats",
-        "title": "Show time stats"
+        "title": "Timey Wimey: Show time stats"
       },
       {
         "command": "timeyWimey.showGlobalUserStats",
-        "title": "Show curent user's stats across all local tracked projects"
+        "title": "Timey Wimey: Show curent user's stats across all local tracked projects"
       }
     ],
     "configuration": {

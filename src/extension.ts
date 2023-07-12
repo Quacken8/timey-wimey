@@ -9,7 +9,7 @@ import { createProjectPathsFile, getOrPromptUserName, getUserName, promptUserNam
 const inactiveInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
 const workingInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
 const includeInGitIgnore = vscode.workspace.getConfiguration('timeyWimey').get('includeInGitIgnore') as boolean;
-var localDirPath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
+const localDirPath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
 var thisUsersFile: fs.WriteStream | undefined = undefined;
 
 var userName: string;	//FIXME prolly wont be possible from vscode api? maybe from config?
@@ -28,9 +28,9 @@ const inactiveTimer = new Timer(inactiveInterval, () => {
 var currentlyActive = false;
 
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	// check for username
-	userName = getOrPromptUserName()
+	userName = await getOrPromptUserName()
 
 	//create local folder if doesnt exist
 	const folderExists = fs.existsSync(localDirPath);
@@ -83,15 +83,14 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 
-	localDirPath += `/${userName}.txt`;
-	thisUsersFile = fs.createWriteStream(localDirPath, { flags: 'a+' });
+	const localFilePath = localDirPath + `/${userName}.txt`;
 	try {
-		fs.accessSync(localDirPath, fs.constants.F_OK);
+		fs.accessSync(localFilePath, fs.constants.F_OK);
 		console.log('Timey file already exists');
 	} catch (err) {
 		// File doesn't exist, create it
 		try {
-			fs.writeFileSync(localDirPath, '');
+			fs.writeFileSync(localFilePath, '');
 			if (includeInGitIgnore) {
 
 				// add it to gitignore
@@ -109,12 +108,13 @@ export function activate(context: vscode.ExtensionContext) {
 			console.error('Error creating timey file:', err);
 		}
 	}
-
-	checkForUnfinishedData(localDirPath);
+	
+	checkForUnfinishedData(localFilePath);
+	thisUsersFile = fs.createWriteStream(localFilePath, { flags: 'a+' });
 
 	// listen to input
 	vscode.workspace.onDidChangeTextDocument(event => {
-		if (event.document.uri.path === localDirPath) { return; } // make sure the editing of the timey file doesnt look like user activity
+		if (event.document.uri.path === localFilePath) { return; } // make sure the editing of the timey file doesnt look like user activity
 		if (!currentlyActive) {
 			recordStart(thisUsersFile!);
 

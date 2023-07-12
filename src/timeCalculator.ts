@@ -113,7 +113,6 @@ export function calculateTime(folderUri: string): CodingTime[] {
             thisMonth: thisMonthHours,
             lastMonth: lastMonthHours
         });
-        console.log(toReturn);
     }
 
     // return codingTime

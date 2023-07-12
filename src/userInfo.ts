@@ -10,10 +10,14 @@ export async function promptUserName() {
     });
 
     // save username to file
-
     if (name) {
+        const folderExists = fs.existsSync(userHomeTimeyDir);
+        if (!folderExists) {
+            fs.mkdirSync(userHomeTimeyDir, { recursive: true });
+        }
         fs.writeFileSync(userHomeTimeyDir + "/username.txt", name);
-    };
+    }
+
 }
 
 export function getUserName(): string {
@@ -21,12 +25,12 @@ export function getUserName(): string {
     return userName;
 }
 
-export function getOrPromptUserName(): string {
+export async function getOrPromptUserName(): Promise<string> {
     try {
         return getUserName();
     }
     catch (err) {
-        promptUserName();
+        await promptUserName();
         return getUserName();
     }
 }
