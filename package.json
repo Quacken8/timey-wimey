@@ -40,12 +40,12 @@
         "timeyWimey.sessionActiveInterval": {
           "type": "number",
           "default": 3,
-          "description": "The number of minutes after which the session is checked for unexpected quits. Longer time means less accurate data but smaller file"
+          "description": "The number of minutes after which the session is checked for unexpected quits. Longer time meanssmaller file but less accurate data in case of a crash"
         },
         "timeyWimey.includeInGitIgnore": {
           "type": "boolean",
           "default": true,
-          "description": "Whether to include your work stats file in the .gitignore file"
+          "description": "Whether to automatically include your work stats file in the .gitignore file"
         }
       }
     }
