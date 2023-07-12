@@ -25,8 +25,8 @@
       "properties": {
         "timeyWimey.inactivityInterval": {
           "type": "number",
-          "default": 30,
-          "description": "The number of seconds of inactivity before the timer stops"
+          "default": 1,
+          "description": "The number of minutes of inactivity before the timer stops"
         },
         "timeyWimey.sessionActiveInterval": {
           "type": "number",

@@ -5,13 +5,13 @@ import { recordWorking, recordEnd, recordStart, checkForUnfinishedData } from '.
 import { TimeyIcon } from './icon';
 import { prettyOutputTimeCalc } from './timeCalculator';
 
-const inactiveInterval = 1000 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
+const inactiveInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
 const workingInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
 const includeInGitIgnore = vscode.workspace.getConfiguration('timeyWimey').get('includeInGitIgnore') as boolean;
 var filePath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
 var file: fs.WriteStream | undefined = undefined;
 
-var userName = "userName";//TODO prolly wont be possible from vscode api? maybe from config?
+var userName = "userName";	//FIXME prolly wont be possible from vscode api? maybe from config?
 var icon = new TimeyIcon();
 
 const progressTimer = new Timer(workingInterval, () => recordWorking(file!));
