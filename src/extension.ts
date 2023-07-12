@@ -37,7 +37,6 @@ export function activate(context: vscode.ExtensionContext) {
 	if (!folderExists) {
 		fs.mkdirSync(localDirPath, { recursive: true });
 	}
-	const localFolderPath = localDirPath;
 
 	//check for home projects folder
 	createProjectPathsFile();

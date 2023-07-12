@@ -2,19 +2,18 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 const userHomeTimeyDir = require('os').homedir() + "/.vscode/extensions/timeyWimey";
 
-export function promptUserName() {
+export async function promptUserName() {
     // prompt for username
-    const name = vscode.window.showInputBox({
+    const name = await vscode.window.showInputBox({
         prompt: "Enter your name for Timey Wimey",
         placeHolder: "John Doe"
     });
 
     // save username to file
-    name.then((userName) => {
-        if (userName) {
-            fs.writeFileSync(userHomeTimeyDir + "/username.txt", userName);
-        }
-    });
+
+    if (name) {
+        fs.writeFileSync(userHomeTimeyDir + "/username.txt", name);
+    };
 }
 
 export function getUserName(): string {
