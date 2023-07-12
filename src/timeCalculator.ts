@@ -1,5 +1,7 @@
+import { defaultCachePath } from '@vscode/test-electron/out/download';
 import { assert } from 'console';
 import * as fs from 'fs';
+import * as vscode from 'vscode';
 
 // returns a list of all file names in a folder
 function getFileNamesInFolder(folderPath: string): string[] {
@@ -108,4 +110,17 @@ export function calculateTime(folderUri: string) : CodingTime[] {
     // return codingTime
     return toReturn;
 
+}
+
+export function prettyOutputTimeCalc(folderURI: string) {
+
+    const data = calculateTime(folderURI);
+    var stringData = "";
+    
+    for (const datapoint of data) {
+        stringData += `#${datapoint.userName}\nToday:\t${datapoint.today} hours\nThis week:\t${datapoint.thisWeek} hours\nThis month:\t${datapoint.thisMonth} hours\nLast month:\t${datapoint.lastMonth}\n=================\n`;
+    }
+    console.log(stringData);
+
+    // vscode.window.showTextDocument(data);
 }

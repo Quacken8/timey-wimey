@@ -2,28 +2,26 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { Timer } from './timer';
 import { recordWorking, recordEnd, recordStart } from './fileIO';
+import { TimeyIcon } from './icon';
 
-const INACTIVE_INTERVAL = 1000 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
-const working_INTERVAl = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
+const inactiveInterval = 1000 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
+const workingInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
+const includeInGitIgnore = vscode.workspace.getConfiguration('timeyWimey').get('includeInGitIgnore') as boolean;
 var filePath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
 var file: fs.WriteStream | undefined = undefined;
 
-// TODO think about how to handle pushing to git: cuz then the user hasnt ended yet. Maybe we can force the end to run before git add commit and then make another start after git finishes? 
-// TODO change acticvation to workspace opened
-// TODO use the config to auto include the timey file in gitignore
+var userName = "userName";//TODO prolly wont be possible from vscode api? maybe from config?
+var icon = new TimeyIcon();
 
-var userName: string | undefined = undefined;
-
-const progressTimer = new Timer(working_INTERVAl, () => recordWorking(file!));
-const inactiveTimer = new Timer(INACTIVE_INTERVAL, () => {
+const progressTimer = new Timer(workingInterval, () => recordWorking(file!));
+const inactiveTimer = new Timer(inactiveInterval, () => {
 	recordEnd(file!);
 	currentlyActive = false;
 	inactiveTimer.stop();
-	progressTimer.stop(); });
+	progressTimer.stop();
+	icon.sleep();
+});
 
-const statusBarIcon = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-statusBarIcon.tooltip = 'Timey Wimey';
-statusBarIcon.text = `$(clock) timeyy`;
 
 function checkForUnfinishedData() {
 
@@ -44,22 +42,17 @@ function checkForUnfinishedData() {
 
 }
 
-
 var currentlyActive = false;
 
 
-
 export function activate(context: vscode.ExtensionContext) {
-	vscode.window.showInformationMessage('Hello World from vscode-extensions!');
-
-	userName = 'userName'; //TODO prolly wont be possible from vscode api? maybe from config?
+	vscode.window.showInformationMessage('  👀   Timey Wimey is tracking your code time here!');
 
 	//create folder if doesnt exist
 	const folderExists = fs.existsSync(filePath);
 	if (!folderExists) {
 		fs.mkdirSync(filePath, { recursive: true });
 	}
-
 
 	filePath += `/${userName}.txt`;
 	file = fs.createWriteStream(filePath, { flags: 'a+' });
@@ -70,6 +63,18 @@ export function activate(context: vscode.ExtensionContext) {
 		// File doesn't exist, create it
 		try {
 			fs.writeFileSync(filePath, '');
+			if (includeInGitIgnore) {
+
+				// add it to gitignore
+				const gitIgnorePath = vscode.workspace.workspaceFolders![0].uri.path + '/.gitignore';
+				try {
+					fs.appendFileSync(gitIgnorePath, '\n.vscode/timeyWimey');
+					console.log('Timey file added to gitignore successfully.');
+				} catch (err) {
+					console.error('Error adding timey file to gitignore:', err);
+				}
+			}
+
 			console.log('Timey file created successfully.');
 		} catch (err) {
 			console.error('Error creating timey file:', err);
@@ -87,6 +92,7 @@ export function activate(context: vscode.ExtensionContext) {
 			progressTimer.start();
 			inactiveTimer.start();
 			currentlyActive = true;
+			icon.wakeUp();
 		}
 		else {
 			inactiveTimer.reset();
@@ -96,9 +102,11 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-	recordEnd(file!);
-	currentlyActive = false;
-	inactiveTimer.stop();
-	progressTimer.stop();
+	if (currentlyActive) {
+		recordEnd(file!);
+		currentlyActive = false;
+		inactiveTimer.stop();
+		progressTimer.stop();
+	}
 }
 
