@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { Timer } from './timer';
+import { recordWorking, recordEnd, recordStart } from './fileIO';
 
 const INACTIVE_INTERVAL = 1000 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
 const working_INTERVAl = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
@@ -14,7 +15,11 @@ var file: fs.WriteStream | undefined = undefined;
 var userName: string | undefined = undefined;
 
 const progressTimer = new Timer(working_INTERVAl, () => recordWorking(file!));
-const inactiveTimer = new Timer(INACTIVE_INTERVAL, () => recordEnd(file!));
+const inactiveTimer = new Timer(INACTIVE_INTERVAL, () => {
+	recordEnd(file!);
+	currentlyActive = false;
+	inactiveTimer.stop();
+	progressTimer.stop(); });
 
 const statusBarIcon = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
 statusBarIcon.tooltip = 'Timey Wimey';
@@ -39,42 +44,10 @@ function checkForUnfinishedData() {
 
 }
 
-function recordWorking(file: fs.WriteStream) {
-	// append working to file with timestamp
-
-	const timestamp = new Date().getTime();
-	const progressLine = `\n${timestamp} working`;
-
-	file.write(progressLine);
-
-}
 
 var currentlyActive = false;
 
-function recordEnd(file: fs.WriteStream) {
-	// append end to file with timestamp
 
-	const timestamp = new Date().getTime();
-	const endLine = `\n${timestamp} end`;
-
-	file.write(endLine);
-
-	currentlyActive = false;
-	inactiveTimer.stop();
-	progressTimer.stop();
-}
-
-function recordStart(file: fs.WriteStream) {
-	// append start to file with timestamp
-	const timestamp = new Date().getTime();
-	const startLine = `\n${timestamp} start`;
-
-	file.write(startLine);
-
-	progressTimer.start();
-	inactiveTimer.start();
-	currentlyActive = true;
-}
 
 export function activate(context: vscode.ExtensionContext) {
 	vscode.window.showInformationMessage('Hello World from vscode-extensions!');
@@ -110,6 +83,10 @@ export function activate(context: vscode.ExtensionContext) {
 		if (event.document.uri.path === filePath) { return; } // make sure the editing of the timey file doesnt look like user activity
 		if (!currentlyActive) {
 			recordStart(file!);
+
+			progressTimer.start();
+			inactiveTimer.start();
+			currentlyActive = true;
 		}
 		else {
 			inactiveTimer.reset();
@@ -120,5 +97,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
 	recordEnd(file!);
+	currentlyActive = false;
+	inactiveTimer.stop();
+	progressTimer.stop();
 }
 
