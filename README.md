@@ -4,7 +4,7 @@ Timey Wimey is a VSCode extension that automatically tracks time spent coding pe
 
 ## Features
 Timey Wimey looks for user input. Whenever they start typing, 
-timey will record that into `.vscode/timeyWimey/userName.txt` with 
+timey will record that into `.vscode/timeyWimey/[userName].txt` with 
 a UTX time stamp. If the user doesn't make any edits or saves for 
 a set amount of minutes (by default 1), they will be concidered 
 inactive and the time get's recorded.
