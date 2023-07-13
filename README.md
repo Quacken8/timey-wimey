@@ -16,7 +16,7 @@ will generate time stats: number of hours worked on this project per user over
 today, this week, this month and last month. Via the command pallette you can 
 also list time you spent on all of your tracked projects.
 
-![Gif showing the usage of the extension!](usage.gif)
+![Gif showing the usage of the extension!](assets/usage.gif)
 
 ## Extension settings:
 - inactivityInterval: number of minutes after which the user is concidered. Defaults 
