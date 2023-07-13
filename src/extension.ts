@@ -139,7 +139,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	vscode.window.showInformationMessage('\t👀\tTimey Wimey is tracking your code time here!');
 }
 
 export function deactivate() {
