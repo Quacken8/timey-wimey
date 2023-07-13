@@ -3,7 +3,7 @@
   "displayName": "Timey Wimey",
   "description": "Extension that keeps track of time spent coding per user per project",
   "publisher": "Quacken",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "engines": {
     "vscode": "^1.80.0"
   },

@@ -152,6 +152,13 @@ export function prettyOutputTimeCalcForUserAllDirs(userName: string): string {
     var stringData = "";
 
     for (const dir of allDirs) {
+        try {
+            fs.accessSync(dir, fs.constants.R_OK);
+        } catch (err) {
+            // File doesn't exist, log and skip
+            console.warn('Timey file does not exist in ' + dir);
+            continue;
+        }
         stringData += `#In ${dir}:\n`;
         stringData += prettyOutputTimeCalcForUser(dir, userName);
     }
