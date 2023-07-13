@@ -64,7 +64,7 @@ export function calculateTime(folderUri: string): CodingTime[] {
     const thisFirstUTX = getFirstOfThisMonthUTX(today);
     const lastFirstUTX = getFirstOfLastMonthUTX(today);
 
-    var toReturn: CodingTime[] = [];
+    let toReturn: CodingTime[] = [];
 
     // for each file make codingTime
     for (const filename of filenames) {
@@ -83,12 +83,12 @@ export function calculateTime(folderUri: string): CodingTime[] {
         }
         assert(starts.length === ends.length, "There is a different number of start times to end times in " + filename + "!");
 
-        var lastMonthHours = 0;
-        var thisMonthHours = 0;
-        var thisWeekHours = 0;
-        var todayHours = 0;
+        let lastMonthHours = 0;
+        let thisMonthHours = 0;
+        let thisWeekHours = 0;
+        let todayHours = 0;
 
-        for (var i = 0; i < starts.length; i++) {
+        for (let i = 0; i < starts.length; i++) {
             const startTime = parseInt(starts[i].split(' ')[0]);
             const endTime = parseInt(ends[i].split(' ')[0]);
 
@@ -120,27 +120,22 @@ export function calculateTime(folderUri: string): CodingTime[] {
 
 }
 
-export function prettyOutputTimeCalc(folderURI: string): string {
+
+// prints out time spent coding in hours for today, this week, this month, and last month per user. If userName is set it will filter for that user
+export function prettyOutputTimeCalc(folderURI: string, userName?: string): string {
 
     const data = calculateTime(folderURI);
-    var stringData = "";
+    let stringData = "";
 
     for (const datapoint of data) {
-        stringData += `#${datapoint.userName}\nToday:\t\t${datapoint.today.toFixed(2)} hours\nThis week:\t${datapoint.thisWeek.toFixed(2)} hours\nThis month:\t${datapoint.thisMonth.toFixed(2)} hours\nLast month:\t${datapoint.lastMonth.toFixed(2)}\n=================\n`;
-    }
-
-    return stringData;
-}
-
-export function prettyOutputTimeCalcForUser(folderURI: string, userName: string): string {
-
-    const data = calculateTime(folderURI);
-
-    var stringData = "";
-
-    for (const datapoint of data) {
-        if (datapoint.userName === userName) {
-            stringData += `#${datapoint.userName}\nToday:\t\t${datapoint.today.toFixed(2)} hours\nThis week:\t${datapoint.thisWeek.toFixed(2)} hours\nThis month:\t${datapoint.thisMonth.toFixed(2)} hours\nLast month:\t${datapoint.lastMonth.toFixed(2)}\n=================\n`;
+        if (userName === undefined || datapoint.userName === userName) {
+            stringData += userName === undefined ? `## ${datapoint.userName}\n` : "";
+            stringData += `Today:\t\t${datapoint.today.toFixed(2)} hours
+This week:\t${datapoint.thisWeek.toFixed(2)} hours
+This month:\t${datapoint.thisMonth.toFixed(2)} hours
+Last month:\t${datapoint.lastMonth.toFixed(2)} hours
+-----------------
+`;
         }
     }
 
@@ -149,7 +144,7 @@ export function prettyOutputTimeCalcForUser(folderURI: string, userName: string)
 
 export function prettyOutputTimeCalcForUserAllDirs(userName: string): string {
     const allDirs = getProjectPaths();
-    var stringData = "";
+    let stringData = "";
 
     for (const dir of allDirs) {
         try {
@@ -159,8 +154,10 @@ export function prettyOutputTimeCalcForUserAllDirs(userName: string): string {
             console.warn('Timey file does not exist in ' + dir);
             continue;
         }
-        stringData += `#In ${dir}:\n`;
-        stringData += prettyOutputTimeCalcForUser(dir, userName);
+
+        const dirToPrint = dir.split('/').slice(0, dir.split('/').length - 2).join('/') + '/';
+        stringData += `## In ${dirToPrint}:\n`;
+        stringData += prettyOutputTimeCalc(dir, userName);
     }
     return stringData;
 }

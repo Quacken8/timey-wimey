@@ -10,10 +10,10 @@ const inactiveInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWi
 const workingInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
 const includeInGitIgnore = vscode.workspace.getConfiguration('timeyWimey').get('includeInGitIgnore') as boolean;
 const localDirPath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
-var thisUsersFile: fs.WriteStream | undefined = undefined;
+let thisUsersFile: fs.WriteStream | undefined = undefined;
 
-var userName = vscode.workspace.getConfiguration('timeyWimey').get('userName') as string;
-var icon = new TimeyIcon();
+let userName = vscode.workspace.getConfiguration('timeyWimey').get('userName') as string;
+let icon = new TimeyIcon();
 
 const progressTimer = new Timer(workingInterval, () => recordWorking(thisUsersFile!));
 const inactiveTimer = new Timer(inactiveInterval, () => {
@@ -25,7 +25,7 @@ const inactiveTimer = new Timer(inactiveInterval, () => {
 });
 
 
-var currentlyActive = false;
+let currentlyActive = false;
 
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -46,8 +46,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// register showStats command
 	let disposable = vscode.commands.registerCommand('timeyWimey.showStats', () => {
-		const documentUri = vscode.Uri.parse('virtual:stats.txt');
-		const documentContent = prettyOutputTimeCalc(localDirPath);
+		const documentUri = vscode.Uri.parse('virtual:Timey Wimey stats');
+		const documentContent = `# Time data for this project\n=================\n${prettyOutputTimeCalc(localDirPath)}`;
 
 		vscode.workspace.registerTextDocumentContentProvider('virtual', {
 			provideTextDocumentContent(uri: vscode.Uri): string {
@@ -68,8 +68,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// register showGlobalUserStats command
 	disposable = vscode.commands.registerCommand('timeyWimey.showGlobalUserStats', () => {
-		const documentUri = vscode.Uri.parse('virtual:globalUserStats.txt');
-		const documentContent = prettyOutputTimeCalcForUserAllDirs(userName);
+		const documentUri = vscode.Uri.parse('virtual:Timey Wimey golbal stats');
+		const documentContent = `# Global time data for user ${userName}\n=================\n${prettyOutputTimeCalcForUserAllDirs(userName)}`;
 		vscode.workspace.registerTextDocumentContentProvider('virtual', {
 			provideTextDocumentContent(uri: vscode.Uri): string {
 				if (uri.path === documentUri.path) {
@@ -82,6 +82,15 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.workspace.openTextDocument(documentUri).then((doc) => {
 			vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
 		});
+	});
+
+	// register stopStart command
+	disposable = vscode.commands.registerCommand('timeyWimey.stopStart', () => {
+		if (currentlyActive) {
+			recordEnd(thisUsersFile!);
+			recordStart(thisUsersFile!);
+			inactiveTimer.reset();
+		}
 	});
 
 

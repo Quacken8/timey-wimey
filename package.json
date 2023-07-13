@@ -2,8 +2,9 @@
   "name": "timey-wimey-tracker",
   "displayName": "Timey Wimey",
   "description": "Extension that keeps track of time spent coding per user per project",
+  "icon": "assets/clock-melting.png",
   "publisher": "Quacken",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -27,6 +28,10 @@
       {
         "command": "timeyWimey.showGlobalUserStats",
         "title": "Timey Wimey: Show curent user's stats across all local tracked projects"
+      },
+      {
+        "command": "timeyWimey.stopStart",
+        "title": "Timey Wimey: Record stop and start recording again"
       }
     ],
     "configuration": {
