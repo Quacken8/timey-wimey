@@ -114,7 +114,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	checkForUnfinishedData(localFilePath);
 	thisUsersFile = fs.createWriteStream(localFilePath, { flags: 'a+' });
 
-	// listen to input
+	// listen to input to editor
 	vscode.workspace.onDidChangeTextDocument(event => {
 		if (event.document.uri.path === localFilePath) { return; } // make sure the editing of the timey file doesnt look like user activity
 		if (!currentlyActive) {

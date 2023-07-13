@@ -25,6 +25,8 @@ to 1 minute.
 the possibility of crash) that the user is indeed still working. Defaults to 5 minutes
 - includeInGitIgnore: whether to include this user's file in the `.gitignore` file. 
 Not everyone has to know how much you work. Defaults to true
+- userName: name to represent you in the records. You will be prompted to put it in
+when you first use the extension
 
 ## Installation
 The extension is accesible directly from VSCode or at [https://marketplace.visualstudio.com/items?itemName=Quacken.timey-wimey-tracker](https://marketplace.visualstudio.com/items?itemName=Quacken.timey-wimey-tracker)
