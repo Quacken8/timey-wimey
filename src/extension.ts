@@ -1,133 +1,87 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import { Timer } from './timer';
-import { recordWorking, recordEnd, recordStart, checkForUnfinishedData } from './fileIO';
+import { recordWorking, recordEnd, recordStart, checkForUnfinishedData, getUserLogsFile } from './fs';
 import { TimeyIcon } from './icon';
 import { prettyOutputTimeCalc, prettyOutputTimeCalcForUserAllDirs } from './timeCalculator';
-import { createProjectPathsFile, getOrPromptUserName, getUserName, promptUserName, recordProjectPathIfNotExists } from './userInfo';
+import { getUserName, recordProjectPathIfNotExists } from './fs';
 
-const inactiveInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
-const workingInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
-const includeInGitIgnore = vscode.workspace.getConfiguration('timeyWimey').get('includeInGitIgnore') as boolean;
-const localDirPath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
-let thisUsersFile: fs.WriteStream | undefined = undefined;
+const inactiveInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get<number>('inactivityInterval') ?? 1); // how long till user considered inactive
+const workingInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get<number>('sessionActiveInterval') ?? 3); // how long till check no unexpected crash
 
 let userName = vscode.workspace.getConfiguration('timeyWimey').get('userName') as string;
 let icon = new TimeyIcon();
 
-const progressTimer = new Timer(workingInterval, () => recordWorking(thisUsersFile!));
-const inactiveTimer = new Timer(inactiveInterval, () => {
-	recordEnd(thisUsersFile!);
-	currentlyActive = false;
-	inactiveTimer.stop();
-	progressTimer.stop();
-	icon.sleep();
-});
-
-
+let progressTimer: Timer;
+let inactiveTimer: Timer;
 let currentlyActive = false;
 
 
 export async function activate(context: vscode.ExtensionContext) {
-	// check for username
-	if (userName === "") {
-		userName = await promptUserName();
-	}
-
-	//create local folder if doesnt exist
-	const folderExists = fs.existsSync(localDirPath);
-	if (!folderExists) {
-		fs.mkdirSync(localDirPath, { recursive: true });
-	}
-
-	//check for home projects folder
-	createProjectPathsFile();
-	recordProjectPathIfNotExists(localDirPath);
+	// record this workspace path
+	await recordProjectPathIfNotExists();
 
 	// register showStats command
-	let disposable = vscode.commands.registerCommand('timeyWimey.showStats', () => {
-		const documentUri = vscode.Uri.parse('virtual:Timey Wimey stats');
-		const documentContent = `# Time data for this project\n=================\n${prettyOutputTimeCalc(localDirPath)}`;
+	context.subscriptions.push(
+		vscode.commands.registerCommand('timeyWimey.showStats', async () => {
+			const documentUri = vscode.Uri.parse('virtual:Timey Wimey stats');
+			const documentContent = `# Time data for this project\n=================\n${await prettyOutputTimeCalc()}`;
 
-		vscode.workspace.registerTextDocumentContentProvider('virtual', {
-			provideTextDocumentContent(uri: vscode.Uri): string {
-				if (uri.path === documentUri.path) {
-					return documentContent;
+			vscode.workspace.registerTextDocumentContentProvider('virtual', {
+				provideTextDocumentContent(uri: vscode.Uri): string {
+					if (uri.path === documentUri.path) {
+						return documentContent;
+					}
+					return '';
 				}
-				return '';
-			}
-		});
+			});
 
-		vscode.workspace.openTextDocument(documentUri).then((doc) => {
-			vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
-		});
-	});
+			vscode.workspace.openTextDocument(documentUri).then((doc) => {
+				vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
+			});
+		})
+	);
 
 	icon.icon.command = "timeyWimey.showStats";
-	context.subscriptions.push(disposable);
 
 	// register showGlobalUserStats command
-	disposable = vscode.commands.registerCommand('timeyWimey.showGlobalUserStats', () => {
-		const documentUri = vscode.Uri.parse('virtual:Timey Wimey golbal stats');
-		const documentContent = `# Global time data for user ${userName}\n=================\n${prettyOutputTimeCalcForUserAllDirs(userName)}`;
-		vscode.workspace.registerTextDocumentContentProvider('virtual', {
-			provideTextDocumentContent(uri: vscode.Uri): string {
-				if (uri.path === documentUri.path) {
-					return documentContent;
+	context.subscriptions.push(
+		vscode.commands.registerCommand('timeyWimey.showGlobalUserStats', async () => {
+			const documentUri = vscode.Uri.parse('virtual:Timey Wimey golbal stats');
+			const documentContent = `# Global time data for user ${userName}\n=================\n${await prettyOutputTimeCalcForUserAllDirs(userName)}`;
+			vscode.workspace.registerTextDocumentContentProvider('virtual', {
+				provideTextDocumentContent(uri: vscode.Uri): string {
+					if (uri.path === documentUri.path) {
+						return documentContent;
+					}
+					return '';
 				}
-				return '';
-			}
-		});
+			});
 
-		vscode.workspace.openTextDocument(documentUri).then((doc) => {
-			vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
-		});
-	});
+			vscode.workspace.openTextDocument(documentUri).then((doc) => {
+				vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
+			});
+		})
+	);
 
 	// register stopStart command
-	disposable = vscode.commands.registerCommand('timeyWimey.stopStart', () => {
-		if (currentlyActive) {
-			recordEnd(thisUsersFile!);
-			recordStart(thisUsersFile!);
-			inactiveTimer.reset();
-		}
-	});
-
-
-	const localFilePath = localDirPath + `/${userName}.txt`;
-	try {
-		fs.accessSync(localFilePath, fs.constants.F_OK);
-		console.log('Timey file already exists');
-	} catch (err) {
-		// File doesn't exist, create it
-		try {
-			fs.writeFileSync(localFilePath, '');
-			if (includeInGitIgnore) {
-
-				// add it to gitignore
-				const gitIgnorePath = vscode.workspace.workspaceFolders![0].uri.path + '/.gitignore';
-				try {
-					fs.appendFileSync(gitIgnorePath, '\n.vscode/timeyWimey');
-					console.log('Timey file added to gitignore successfully.');
-				} catch (err) {
-					console.error('Error adding timey file to gitignore:', err);
-				}
+	context.subscriptions.push(
+		vscode.commands.registerCommand('timeyWimey.stopStart', async () => {
+			if (currentlyActive) {
+				await recordEnd();
+				await recordStart();
+				inactiveTimer.reset();
 			}
+		})
+	);
 
-			console.log('Timey file created successfully.');
-		} catch (err) {
-			console.error('Error creating timey file:', err);
-		}
-	}
-	
-	checkForUnfinishedData(localFilePath);
-	thisUsersFile = fs.createWriteStream(localFilePath, { flags: 'a+' });
+	await checkForUnfinishedData();
 
 	// listen to input to editor
-	vscode.workspace.onDidChangeTextDocument(event => {
-		if (event.document.uri.path === localFilePath) { return; } // make sure the editing of the timey file doesnt look like user activity
+	vscode.workspace.onDidChangeTextDocument(async (event) => {
+		if (event.document.uri.path === await getUserLogsFile()) { return; } // make sure the editing of the timey file doesnt look like user activity
+
 		if (!currentlyActive) {
-			recordStart(thisUsersFile!);
+			await recordStart();
 
 			progressTimer.start();
 			inactiveTimer.start();
@@ -139,11 +93,19 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	progressTimer = new Timer(workingInterval, async () => await recordWorking());
+	inactiveTimer = new Timer(inactiveInterval, async () => {
+		await recordEnd();
+		currentlyActive = false;
+		inactiveTimer.stop();
+		progressTimer.stop();
+		icon.sleep();
+	});
 }
 
-export function deactivate() {
+export async function deactivate() {
 	if (currentlyActive) {
-		recordEnd(thisUsersFile!);
+		await recordEnd();
 		currentlyActive = false;
 		inactiveTimer.stop();
 		progressTimer.stop();

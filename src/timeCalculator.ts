@@ -1,27 +1,24 @@
-import { defaultCachePath } from '@vscode/test-electron/out/download';
+import * as fs from 'fs/promises';
 import { assert } from 'console';
-import * as fs from 'fs';
-import * as vscode from 'vscode';
-import { removeWorkingEntries } from './fileIO';
-import { getProjectPaths } from './userInfo';
+import { getProjectPaths, getWorkspaceTimeyDir, removeWorkingEntries } from './fs';
 
 // returns a list of all file names in a folder
-function getFileNamesInFolder(folderPath: string): string[] {
+async function getFileNamesInFolder(folderPath: string): Promise<string[]> {
     const files: string[] = [];
 
     // Read the contents of the folder
-    const folderContents = fs.readdirSync(folderPath);
+    const folderContents = await fs.readdir(folderPath);
 
     // Iterate over each item in the folder
-    folderContents.forEach((item: any) => {
+    for (const item of folderContents) {
         // Create the full path of the item
         const itemPath = `${folderPath}/${item}`;
 
         // Check if the item is a file
-        if (fs.statSync(itemPath).isFile()) {
+        if ((await fs.stat(itemPath)).isFile()) {
             files.push(itemPath); // Add the file path to the list
         }
-    });
+    }
 
     return files;
 }
@@ -54,9 +51,9 @@ interface CodingTime {
 }
 
 // calculates time spent coding in hours for today, this week, this month, and last month per user
-export function calculateTime(folderUri: string): CodingTime[] {
+export async function calculateTime(folderUri: string): Promise<CodingTime[]> {
 
-    const filenames = getFileNamesInFolder(folderUri);
+    const filenames = await getFileNamesInFolder(folderUri);
 
     const today = new Date();
     const todayUTX = getTodayUTX(today);
@@ -70,9 +67,9 @@ export function calculateTime(folderUri: string): CodingTime[] {
     for (const filename of filenames) {
         const userName = filename.split('/')[filename.split('/').length - 1].split('.')[0]
 
-        removeWorkingEntries(filename);
+        await removeWorkingEntries(filename);
 
-        const fileContents = fs.readFileSync(filename, 'utf8').split('\n');
+        const fileContents = (await fs.readFile(filename, 'utf8')).split('\n');
 
         const starts = fileContents.filter(line => line.endsWith('start'));
         const ends = fileContents.filter(line => line.endsWith('end'));
@@ -122,9 +119,10 @@ export function calculateTime(folderUri: string): CodingTime[] {
 
 
 // prints out time spent coding in hours for today, this week, this month, and last month per user. If userName is set it will filter for that user
-export function prettyOutputTimeCalc(folderURI: string, userName?: string): string {
+export async function prettyOutputTimeCalc(folderURI?: string, userName?: string): Promise<string> {
+    folderURI ??= await getWorkspaceTimeyDir();
 
-    const data = calculateTime(folderURI);
+    const data = await calculateTime(folderURI);
     let stringData = "";
 
     for (const datapoint of data) {
@@ -142,13 +140,13 @@ Last month:\t${datapoint.lastMonth.toFixed(2)} hours
     return stringData;
 }
 
-export function prettyOutputTimeCalcForUserAllDirs(userName: string): string {
-    const allDirs = getProjectPaths();
+export async function prettyOutputTimeCalcForUserAllDirs(userName: string): Promise<string> {
+    const allDirs = await getProjectPaths();
     let stringData = "";
 
     for (const dir of allDirs) {
         try {
-            fs.accessSync(dir, fs.constants.R_OK);
+            await fs.access(dir, fs.constants.R_OK);
         } catch (err) {
             // File doesn't exist, log and skip
             console.warn('Timey file does not exist in ' + dir);
