@@ -1,28 +1,52 @@
+/** ![](https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Kitchen_timer.jpg/120px-Kitchen_timer.jpg) */
 export class Timer {
-    private timerId: NodeJS.Timeout | null = null;
     private interval: number;
+    private readonly repeating: boolean;
     private callback: () => void;
 
-    constructor(interval: number, callback: () => void) {
+    private timerId: number = -1;
+    public ticking = false;
+
+    constructor({ interval, repeating, callback }: { interval: number, callback: () => void, repeating?: boolean }) {
         this.interval = interval;
         this.callback = callback;
+        this.repeating = repeating ?? false;
     }
 
-    start() {
-        this.timerId = setInterval(() => {
-            this.callback();
-        }, this.interval);
-    }
-
-    stop() {
-        if (this.timerId) {
-            clearInterval(this.timerId);
-            this.timerId = null;
+    private setTimer(f: () => void): number {
+        if (this.repeating) {
+            return +setInterval(f, this.interval);
+        } else {
+            return +setTimeout(f, this.interval);
         }
     }
 
-    reset() {
+    private clearTimer(id: number): void {
+        if (this.repeating) {
+            clearInterval(id);
+        } else {
+            clearTimeout(id);
+        }
+    }
+
+    start() {
+        this.ticking = true;
+
+        this.clearTimer(this.timerId);
+        this.timerId = this.setTimer(() => {
+            this.ticking = false;
+            this.callback();
+        });
+    }
+
+    stop() {
+        this.ticking = false;
+        this.clearTimer(this.timerId);
+    }
+
+    dispose() {
         this.stop();
-        this.start();
+        this.callback = () => {};
+        this.start = () => { throw new Error("Calling a timer that has been disposed of."); };
     }
 }

@@ -1,152 +1,140 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import { Timer } from './timer';
-import { recordWorking, recordEnd, recordStart, checkForUnfinishedData } from './fileIO';
+import { recordWorking, recordEnd, recordStart, checkForUnfinishedData, getUserLogsFile } from './fs';
 import { TimeyIcon } from './icon';
 import { prettyOutputTimeCalc, prettyOutputTimeCalcForUserAllDirs } from './timeCalculator';
-import { createProjectPathsFile, getOrPromptUserName, getUserName, promptUserName, recordProjectPathIfNotExists } from './userInfo';
+import { recordProjectPathIfNotExists } from './fs';
 
-const inactiveInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('inactivityInterval') as number); // how long till user considered inactive
-const workingInterval = 1000 * 60 * (vscode.workspace.getConfiguration('timeyWimey').get('sessionActiveInterval') as number); // how long till check no unexpected crash
-const includeInGitIgnore = vscode.workspace.getConfiguration('timeyWimey').get('includeInGitIgnore') as boolean;
-const localDirPath = vscode.workspace.workspaceFolders![0].uri.path + '/.vscode/timeyWimey';
-let thisUsersFile: fs.WriteStream | undefined = undefined;
-
-let userName = vscode.workspace.getConfiguration('timeyWimey').get('userName') as string;
-let icon = new TimeyIcon();
-
-const progressTimer = new Timer(workingInterval, () => recordWorking(thisUsersFile!));
-const inactiveTimer = new Timer(inactiveInterval, () => {
-	recordEnd(thisUsersFile!);
-	currentlyActive = false;
-	inactiveTimer.stop();
-	progressTimer.stop();
-	icon.sleep();
-});
-
-
-let currentlyActive = false;
+// make asynchronous unsubscriptions more pleasant to work with
+const subs: Array<() => void | Promise<void>> = [];
+function onDeactivate(f: () => void | Promise<void>) {
+	subs.push(f);
+}
+export async function deactivate() {
+	for (const f of subs) {
+		await f();
+	}
+}
 
 
 export async function activate(context: vscode.ExtensionContext) {
-	// check for username
-	if (userName === "") {
-		userName = await promptUserName();
-	}
+	// mark a resource to be disposed of on the extension's deactivation
+	const subscribe = <T extends { dispose(): void }>(d: T) => {
+		context.subscriptions.push(d);
+		return d;
+	};
 
-	//create local folder if doesnt exist
-	const folderExists = fs.existsSync(localDirPath);
-	if (!folderExists) {
-		fs.mkdirSync(localDirPath, { recursive: true });
-	}
+	// load configuration
+	const config = vscode.workspace.getConfiguration('timeyWimey');
+	const inactiveInterval = 1000 * 60 * (config.get<number>('inactivityInterval') ?? 1); // how long till user considered inactive
+	const workingInterval = 1000 * 60 * (config.get<number>('sessionActiveInterval') ?? 3); // how long till check no unexpected crash
+	const userName = config.get<string>('userName') ?? '';
 
-	//check for home projects folder
-	createProjectPathsFile();
-	recordProjectPathIfNotExists(localDirPath);
 
-	// register showStats command
-	let disposable = vscode.commands.registerCommand('timeyWimey.showStats', () => {
-		const documentUri = vscode.Uri.parse('virtual:Timey Wimey stats');
-		const documentContent = `# Time data for this project\n=================\n${prettyOutputTimeCalc(localDirPath)}`;
-
-		vscode.workspace.registerTextDocumentContentProvider('virtual', {
-			provideTextDocumentContent(uri: vscode.Uri): string {
-				if (uri.path === documentUri.path) {
-					return documentContent;
-				}
-				return '';
-			}
-		});
-
-		vscode.workspace.openTextDocument(documentUri).then((doc) => {
-			vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
-		});
-	});
-
+	// create icon
+	const icon = new TimeyIcon();
 	icon.icon.command = "timeyWimey.showStats";
-	context.subscriptions.push(disposable);
 
-	// register showGlobalUserStats command
-	disposable = vscode.commands.registerCommand('timeyWimey.showGlobalUserStats', () => {
-		const documentUri = vscode.Uri.parse('virtual:Timey Wimey golbal stats');
-		const documentContent = `# Global time data for user ${userName}\n=================\n${prettyOutputTimeCalcForUserAllDirs(userName)}`;
-		vscode.workspace.registerTextDocumentContentProvider('virtual', {
-			provideTextDocumentContent(uri: vscode.Uri): string {
-				if (uri.path === documentUri.path) {
-					return documentContent;
-				}
-				return '';
+
+	// create a kitchen timer to track (in)activity
+	const activityTimer = subscribe(
+		new Timer({
+			interval: inactiveInterval,
+			async callback() {
+				icon.sleep();
+				progressTimer.stop();
+				await recordEnd();
 			}
-		});
+		})
+	);
+	const isCurrentlyActive = () => activityTimer.ticking;
 
-		vscode.workspace.openTextDocument(documentUri).then((doc) => {
-			vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
-		});
+	// create a timer that periodically logs progress
+	// in case VSC is killed or crashes
+	const progressTimer = subscribe(
+		new Timer({
+			interval: workingInterval,
+			repeating: true,
+			async callback() {
+				if (isCurrentlyActive()) await recordWorking();
+				else progressTimer.stop();
+			}
+		})
+	);
+
+	onDeactivate(async () => {
+		if (isCurrentlyActive()) await recordEnd();
 	});
 
-	// register stopStart command
-	disposable = vscode.commands.registerCommand('timeyWimey.stopStart', () => {
-		if (currentlyActive) {
-			recordEnd(thisUsersFile!);
-			recordStart(thisUsersFile!);
-			inactiveTimer.reset();
-		}
-	});
 
+	// record this workspace's path and prepare local data
+	await recordProjectPathIfNotExists();
+	await checkForUnfinishedData();
 
-	const localFilePath = localDirPath + `/${userName}.txt`;
-	try {
-		fs.accessSync(localFilePath, fs.constants.F_OK);
-		console.log('Timey file already exists');
-	} catch (err) {
-		// File doesn't exist, create it
-		try {
-			fs.writeFileSync(localFilePath, '');
-			if (includeInGitIgnore) {
-
-				// add it to gitignore
-				const gitIgnorePath = vscode.workspace.workspaceFolders![0].uri.path + '/.gitignore';
-				try {
-					fs.appendFileSync(gitIgnorePath, '\n.vscode/timeyWimey');
-					console.log('Timey file added to gitignore successfully.');
-				} catch (err) {
-					console.error('Error adding timey file to gitignore:', err);
-				}
-			}
-
-			console.log('Timey file created successfully.');
-		} catch (err) {
-			console.error('Error creating timey file:', err);
-		}
-	}
-	
-	checkForUnfinishedData(localFilePath);
-	thisUsersFile = fs.createWriteStream(localFilePath, { flags: 'a+' });
 
 	// listen to input to editor
-	vscode.workspace.onDidChangeTextDocument(event => {
-		if (event.document.uri.path === localFilePath) { return; } // make sure the editing of the timey file doesnt look like user activity
-		if (!currentlyActive) {
-			recordStart(thisUsersFile!);
+	subscribe(
+		vscode.workspace.onDidChangeTextDocument(async (event) => {
+			if (event.document.uri.path === await getUserLogsFile()) { return; } // make sure the editing of the timey file doesnt look like user activity
 
-			progressTimer.start();
-			inactiveTimer.start();
-			currentlyActive = true;
-			icon.wakeUp();
-		}
-		else {
-			inactiveTimer.reset();
-		}
-	});
+			if (!isCurrentlyActive()) {
+				recordStart();
+				progressTimer.start();
+				icon.wakeUp();
+			}
+			activityTimer.start();
+		})
+	);
 
+
+	// register showStats command
+	subscribe(
+		vscode.commands.registerCommand('timeyWimey.showStats', async () => {
+			const documentUri = vscode.Uri.parse('virtual:Timey Wimey stats');
+			const documentContent = `# Time data for this project\n=================\n${await prettyOutputTimeCalc()}`;
+
+			subscribe(vscode.workspace.registerTextDocumentContentProvider('virtual', {
+				provideTextDocumentContent(uri: vscode.Uri): string {
+					if (uri.path === documentUri.path) {
+						return documentContent;
+					}
+					return '';
+				}
+			}));
+
+			const doc = await vscode.workspace.openTextDocument(documentUri);
+			vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
+		})
+	);
+
+	// register showGlobalUserStats command
+	subscribe(
+		vscode.commands.registerCommand('timeyWimey.showGlobalUserStats', async () => {
+			const documentUri = vscode.Uri.parse('virtual:Timey Wimey golbal stats');
+			const documentContent = `# Global time data for user ${userName}\n=================\n${await prettyOutputTimeCalcForUserAllDirs(userName)}`;
+			vscode.workspace.registerTextDocumentContentProvider('virtual', {
+				provideTextDocumentContent(uri: vscode.Uri): string {
+					if (uri.path === documentUri.path) {
+						return documentContent;
+					}
+					return '';
+				}
+			});
+
+			vscode.workspace.openTextDocument(documentUri).then((doc) => {
+				vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
+			});
+		})
+	);
+
+	// register stopStart command
+	subscribe(
+		vscode.commands.registerCommand('timeyWimey.stopStart', async () => {
+			if (isCurrentlyActive()) {
+				await recordEnd();
+			}
+			await recordStart();
+			activityTimer.start();
+		})
+	);
 }
-
-export function deactivate() {
-	if (currentlyActive) {
-		recordEnd(thisUsersFile!);
-		currentlyActive = false;
-		inactiveTimer.stop();
-		progressTimer.stop();
-	}
-}
-
