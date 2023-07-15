@@ -1,26 +1,47 @@
 /** ![](https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Kitchen_timer.jpg/120px-Kitchen_timer.jpg) */
 export class Timer {
+    private interval: number;
+    private readonly repeating: boolean;
+    private callback: () => void;
+
     private timerId: number = -1;
     public ticking = false;
 
-    constructor(
-        private interval: number,
-        private callback: () => void
-    ) {}
+    constructor({ interval, repeating, callback }: { interval: number, callback: () => void, repeating?: boolean }) {
+        this.interval = interval;
+        this.callback = callback;
+        this.repeating = repeating ?? false;
+    }
+
+    private setTimer(f: () => void): number {
+        if (this.repeating) {
+            return +setInterval(f, this.interval);
+        } else {
+            return +setTimeout(f, this.interval);
+        }
+    }
+
+    private clearTimer(id: number): void {
+        if (this.repeating) {
+            clearInterval(id);
+        } else {
+            clearTimeout(id);
+        }
+    }
 
     start() {
         this.ticking = true;
 
-        clearTimeout(this.timerId);
-        this.timerId = +setTimeout(() => {
+        this.clearTimer(this.timerId);
+        this.timerId = this.setTimer(() => {
             this.ticking = false;
             this.callback();
-        }, this.interval);
+        });
     }
 
     stop() {
         this.ticking = false;
-        clearTimeout(this.timerId);
+        this.clearTimer(this.timerId);
     }
 
     dispose() {

@@ -5,13 +5,24 @@ import { TimeyIcon } from './icon';
 import { prettyOutputTimeCalc, prettyOutputTimeCalcForUserAllDirs } from './timeCalculator';
 import { recordProjectPathIfNotExists } from './fs';
 
+// make asynchronous unsubscriptions more pleasant to work with
+const subs: Array<() => void | Promise<void>> = [];
+function onDeactivate(f: () => void | Promise<void>) {
+	subs.push(f);
+}
+export async function deactivate() {
+	for (const f of subs) {
+		await f();
+	}
+}
+
+
 export async function activate(context: vscode.ExtensionContext) {
 	// mark a resource to be disposed of on the extension's deactivation
-	const subscribe = <T extends vscode.Disposable>(d: T) => {
+	const subscribe = <T extends { dispose(): void }>(d: T) => {
 		context.subscriptions.push(d);
 		return d;
 	};
-	const onDeactivate = (f: () => void): void => void subscribe({ dispose: f });
 
 	// load configuration
 	const config = vscode.workspace.getConfiguration('timeyWimey');
@@ -25,17 +36,31 @@ export async function activate(context: vscode.ExtensionContext) {
 	icon.icon.command = "timeyWimey.showStats";
 
 
-	// create kitchen timers to track (in)activity
-	const progressTimer = subscribe(
-		new Timer(workingInterval, async () => await recordWorking())
-	);
-	const inactiveTimer = subscribe(
-		new Timer(inactiveInterval, async () => {
-			icon.sleep();
-			await recordEnd();
+	// create a kitchen timer to track (in)activity
+	const activityTimer = subscribe(
+		new Timer({
+			interval: inactiveInterval,
+			async callback() {
+				icon.sleep();
+				progressTimer.stop();
+				await recordEnd();
+			}
 		})
 	);
-	const isCurrentlyActive = () => inactiveTimer.ticking;
+	const isCurrentlyActive = () => activityTimer.ticking;
+
+	// create a timer that periodically logs progress
+	// in case VSC is killed or crashes
+	const progressTimer = subscribe(
+		new Timer({
+			interval: workingInterval,
+			repeating: true,
+			async callback() {
+				if (isCurrentlyActive()) await recordWorking();
+				else progressTimer.stop();
+			}
+		})
+	);
 
 	onDeactivate(async () => {
 		if (isCurrentlyActive()) await recordEnd();
@@ -57,7 +82,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				progressTimer.start();
 				icon.wakeUp();
 			}
-			inactiveTimer.start();
+			activityTimer.start();
 		})
 	);
 
@@ -109,7 +134,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				await recordEnd();
 			}
 			await recordStart();
-			inactiveTimer.start();
+			activityTimer.start();
 		})
 	);
 }
