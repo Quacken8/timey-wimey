@@ -1,28 +1,31 @@
+/** ![](https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Kitchen_timer.jpg/120px-Kitchen_timer.jpg) */
 export class Timer {
-    private timerId: NodeJS.Timeout | null = null;
-    private interval: number;
-    private callback: () => void;
+    private timerId: number = -1;
+    public ticking = false;
 
-    constructor(interval: number, callback: () => void) {
-        this.interval = interval;
-        this.callback = callback;
-    }
+    constructor(
+        private interval: number,
+        private callback: () => void
+    ) {}
 
     start() {
-        this.timerId = setInterval(() => {
+        this.ticking = true;
+
+        clearTimeout(this.timerId);
+        this.timerId = +setTimeout(() => {
+            this.ticking = false;
             this.callback();
         }, this.interval);
     }
 
     stop() {
-        if (this.timerId) {
-            clearInterval(this.timerId);
-            this.timerId = null;
-        }
+        this.ticking = false;
+        clearTimeout(this.timerId);
     }
 
-    reset() {
+    dispose() {
         this.stop();
-        this.start();
+        this.callback = () => {};
+        this.start = () => { throw new Error("Calling a timer that has been disposed of."); };
     }
 }
