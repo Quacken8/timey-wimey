@@ -89,8 +89,11 @@ async function calculateTimePerCommit(projectTimeyFolderUri: string): Promise<Co
                 const startTime = parseInt(starts[i].split(' ')[0]);
                 const endTime = parseInt(ends[i].split(' ')[0]);
 
-                if (startTime > earlyCommit.time.getTime() && endTime < lateCommit.time.getTime()) {
-                    thisCommitHours += (endTime - startTime) / 1000 / 60 / 60;
+                const startOverlap = Math.max(startTime, earlyCommit.time.getTime());
+                const endOverlap = Math.min(endTime, lateCommit.time.getTime());
+
+                if (startOverlap < endOverlap) {
+                    thisCommitHours += (endOverlap - startOverlap) / 1000 / 60 / 60;
                 }
             }
 
@@ -125,7 +128,6 @@ export async function prettyOutputTimeCalcPerCommit(projectTimeyFolderUri?: stri
         for (let i = 0; i < commit.userNames.length; i++) {
             stringData += `${commit.userNames[i]}: ${commit.hoursSpent[i].toFixed(2)} hours\n`;
         }
-        stringData += "-----------------\n";
     }
     return stringData;
 }

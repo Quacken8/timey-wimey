@@ -4,7 +4,7 @@
   "description": "Extension that keeps track of time spent coding per user per project",
   "icon": "assets/clock-melting.png",
   "publisher": "Quacken",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "keywords": [
     "simple",
     "free",
