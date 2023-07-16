@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Timer } from './timer';
 import { recordWorking, recordEnd, recordStart, checkForUnfinishedData, getUserLogsFile } from './fs';
 import { TimeyIcon } from './icon';
-import { prettyOutputTimeCalc, prettyOutputTimeCalcForUserAllDirs } from './timeCalculator';
+import { prettyOutputTimeCalc, prettyOutputTimeCalcForUserAllDirs, prettyOutputTimeCalcPerCommit } from './timeCalculator';
 import { recordProjectPathIfNotExists } from './fs';
 
 // make asynchronous unsubscriptions more pleasant to work with
@@ -92,6 +92,27 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('timeyWimey.showStats', async () => {
 			const documentUri = vscode.Uri.parse('virtual:Timey Wimey stats');
 			const documentContent = `# Time data for this project\n=================\n${await prettyOutputTimeCalc()}`;
+
+			subscribe(vscode.workspace.registerTextDocumentContentProvider('virtual', {
+				provideTextDocumentContent(uri: vscode.Uri): string {
+					if (uri.path === documentUri.path) {
+						return documentContent;
+					}
+					return '';
+				}
+			}));
+
+			const doc = await vscode.workspace.openTextDocument(documentUri);
+			vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
+		})
+	);
+
+	// register showStatsPerCommit command
+	subscribe(
+		vscode.commands.registerCommand('timeyWimey.showStatsPerCommit', async () => {
+			const documentUri = vscode.Uri.parse('virtual:Timey Wimey stats per commit');
+			const thisFolder = vscode.workspace.workspaceFolders![0].uri.path.split('/').at(-1)!;
+			const documentContent = `# Time spent on this project (${thisFolder}) per commit:\n=================\n${await prettyOutputTimeCalcPerCommit()}`;
 
 			subscribe(vscode.workspace.registerTextDocumentContentProvider('virtual', {
 				provideTextDocumentContent(uri: vscode.Uri): string {

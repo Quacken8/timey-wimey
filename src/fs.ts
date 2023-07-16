@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import { homedir } from 'os';
 import { join as joinPaths } from 'path';
+import { GitlogOptions, gitlogPromise } from 'gitlog';
 
 async function fileExists(path: string) {
     try {
@@ -14,6 +15,26 @@ async function fileExists(path: string) {
     }
 }
 
+// returns a list of all file names in a folder
+export async function getFileNamesInFolder(folderPath: string): Promise<string[]> {
+    const files: string[] = [];
+
+    // Read the contents of the folder
+    const folderContents = await fs.readdir(folderPath);
+
+    // Iterate over each item in the folder
+    for (const item of folderContents) {
+        // Create the full path of the item
+        const itemPath = `${folderPath}/${item}`;
+
+        // Check if the item is a file
+        if ((await fs.stat(itemPath)).isFile()) {
+            files.push(itemPath); // Add the file path to the list
+        }
+    }
+
+    return files;
+}
 
 // Global
 
@@ -37,7 +58,7 @@ export async function getProjectPaths() {
 }
 
 export async function recordProjectPathIfNotExists() {
-    const localPath = await getUserLogsFile();
+    const localPath = (await getUserLogsFile()).split("/").slice(0, -1).join("/");
     const globalPath = await getProjectPathsFile();
     const paths = await getProjectPaths();
 
@@ -124,4 +145,60 @@ export async function checkForUnfinishedData() {
 
         await fs.appendFile(path, endLine);
     }
+}
+
+// finds the oldest datapoint in this project across all users
+export async function getOldestTimeyDatapoint() : Promise<Date> {
+    // just load the first line of every file and find the oldest
+
+    const filenames = await getFileNamesInFolder(await getWorkspaceTimeyDir());
+
+    const firstLines = Promise.all(filenames.map(async filename => {
+        const firstLine = fs.readFile(filename, 'utf8').then(data => data.split('\n')[0]) as Promise<number>;
+        return firstLine;
+    }));
+
+    const oldest = Math.min(...(await firstLines));
+
+    return new Date(oldest);
+}
+
+export interface CommitInfo {
+    hash: string;
+    message: string;
+    time: Date;
+}
+
+export interface File {
+    name: string;
+    lines: string[];
+}
+
+export async function getCommitInfos() : Promise<CommitInfo[] | undefined>{
+    // check there is a .git folder
+    const gitPath = joinPaths(vscode.workspace.workspaceFolders![0].uri.path, '.git');
+    if (!await fileExists(gitPath)) return undefined;
+
+    const oldestTimeyDatapoint = await getOldestTimeyDatapoint();
+
+    // get all commits since oldest datapoint
+    const gitlogOptions: GitlogOptions<"subject" | "authorDate" | "hash"> = {
+        repo: ".",
+        fields: ["subject", "hash", "authorDate"] as const,
+        since: oldestTimeyDatapoint.toLocaleDateString(), // i sure do hope this is correct, cuz the documentation fokis sucks lol
+    };
+
+    const commits = await gitlogPromise(gitlogOptions);
+
+    let toReturn: CommitInfo[] = [];
+    
+    for (const commit of commits) {
+        toReturn.push({
+            hash: commit.hash,
+            message: commit.subject,
+            time: new Date(commit.authorDate),
+        });
+    }
+
+    return toReturn;
 }

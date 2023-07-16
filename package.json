@@ -5,6 +5,13 @@
   "icon": "assets/clock-melting.png",
   "publisher": "Quacken",
   "version": "0.0.9",
+  "keywords": [
+    "simple",
+    "free",
+    "time",
+    "tracker",
+    "vscode"
+  ],
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -28,6 +35,10 @@
       {
         "command": "timeyWimey.showGlobalUserStats",
         "title": "Timey Wimey: Show curent user's stats across all local tracked projects"
+      },
+      {
+        "command": "timeyWimey.showStatsPerCommit",
+        "title": "Timey Wimey: Show time stats per commit"
       },
       {
         "command": "timeyWimey.stopStart",
@@ -87,5 +98,8 @@
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
     "typescript": "^5.1.3"
+  },
+  "dependencies": {
+    "gitlog": "^4.0.8"
   }
 }
