@@ -176,19 +176,23 @@ export interface File {
 
 export async function getCommitInfos() : Promise<CommitInfo[] | undefined>{
     // check there is a .git folder
-    const gitPath = joinPaths(vscode.workspace.workspaceFolders![0].uri.path, '.git');
-    if (!await fileExists(gitPath)) return undefined;
 
     const oldestTimeyDatapoint = await getOldestTimeyDatapoint();
 
     // get all commits since oldest datapoint
     const gitlogOptions: GitlogOptions<"subject" | "authorDate" | "hash"> = {
-        repo: ".",
+        repo: vscode.workspace.workspaceFolders![0].uri.path,
         fields: ["subject", "hash", "authorDate"] as const,
         since: oldestTimeyDatapoint.toLocaleDateString(), // i sure do hope this is correct, cuz the documentation fokis sucks lol
     };
 
-    const commits = await gitlogPromise(gitlogOptions);
+    let commits;
+    try {
+        commits = await gitlogPromise(gitlogOptions);
+    }
+    catch (e) {
+        return undefined;
+    }
 
     let toReturn: CommitInfo[] = [];
     

@@ -17,11 +17,12 @@ async function calculateTimePerCommit(projectTimeyFolderUri: string): Promise<Co
     // these filenames double as usernames
     const filenames = await getFileNamesInFolder(projectTimeyFolderUri);
 
-    const commits = await getCommitInfos();
+    let commits = await getCommitInfos();
 
     let toReturn: CodingTimePerCommit[] = [];
 
     if (commits === undefined) return toReturn;
+    commits = commits.reverse();
 
     // load all user files with their time data
     const files: File[] = await Promise.all(filenames.map(async filename => {
@@ -43,7 +44,8 @@ async function calculateTimePerCommit(projectTimeyFolderUri: string): Promise<Co
 
     for (const file of files) {
         if (file.lines.length === 0) continue;
-        const firstTimepoint = new Date(parseInt(file.lines[0].split(' ')[0]));
+        const firstRelevantLine = file.lines[0] === '' ? file.lines[1] : file.lines[0];
+        const firstTimepoint = new Date(parseInt(firstRelevantLine.split(' ')[0]));
         if (firstTimepoint > firstCommit!.time) continue;   // this user contributed after the first commit
         const hoursSpent = (firstCommit!.time.getTime() - firstTimepoint.getTime()) / 1000 / 60 / 60;
         firstCommitsUsers.push(file.name.split('/')[file.name.split('/').length - 1].split('.')[0]);
@@ -59,7 +61,7 @@ async function calculateTimePerCommit(projectTimeyFolderUri: string): Promise<Co
     });
 
     // now all the in between commits
-    for (let i = 0; i < commits.length - 2; i++) {
+    for (let i = 0; i < commits.length - 1; i++) {
         const earlyCommit = commits[i];
         const lateCommit = commits[i + 1];
 
@@ -108,7 +110,7 @@ async function calculateTimePerCommit(projectTimeyFolderUri: string): Promise<Co
     }
 
     // and return the list
-    return timesPerCommit;
+    return timesPerCommit.reverse();
 }
 
 export async function prettyOutputTimeCalcPerCommit(projectTimeyFolderUri?: string): Promise<string> {
