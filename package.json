@@ -4,7 +4,7 @@
   "description": "Extension that keeps track of time spent coding per user per project",
   "icon": "assets/clock-melting.png",
   "publisher": "Quacken",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "keywords": [
     "simple",
     "free",
@@ -82,8 +82,8 @@
     "esbuild": "npm run esbuild-base -- --sourcemap",
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
     "test-compile": "tsc -p ./",
-    "package": "pnpm vsce package --no-dependencies",
-    "publish": "pnpm vsce publish --no-dependencies"
+    "package": "pnpm vsce package",
+    "publish": "pnpm vsce publish"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
