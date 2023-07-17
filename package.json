@@ -102,6 +102,7 @@
   },
   "dependencies": {
     "@vscode/vsce": "^2.19.0",
-    "gitlog": "^4.0.8"
+    "gitlog": "^4.0.8",
+    "svelte": "^4.0.5"
   }
 }
