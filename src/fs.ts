@@ -153,18 +153,20 @@ export async function getOldestTimeyDatapoint() : Promise<Date> {
 
     const filenames = await getFileNamesInFolder(await getWorkspaceTimeyDir());
 
-    const firstLines = Promise.all(filenames.map(async filename => {
-        const firstLine = fs.readFile(filename, 'utf8').then(data => data.split('\n')[0]) as Promise<number>;
-        return firstLine;
+    const firstLines = await Promise.all(filenames.map(async (filename) => {
+        const fileContents = (await fs.readFile(filename, 'utf8')).trim();
+        const firstLine = fileContents.split('\n')[0];
+        const firstLineTimestamp = firstLine.split(' ')[0];
+        return parseInt(firstLineTimestamp);
     }));
 
-    const oldest = Math.min(...(await firstLines));
+    const oldest = Math.min(...(firstLines));
 
     return new Date(oldest);
 }
 
 export interface CommitInfo {
-    hash: string;
+    author: string;
     message: string;
     time: Date;
 }
@@ -180,9 +182,9 @@ export async function getCommitInfos() : Promise<CommitInfo[] | undefined>{
     const oldestTimeyDatapoint = await getOldestTimeyDatapoint();
 
     // get all commits since oldest datapoint
-    const gitlogOptions: GitlogOptions<"subject" | "authorDate" | "hash"> = {
+    const gitlogOptions: GitlogOptions<"subject" | "authorDate" | "authorName"> = {
         repo: vscode.workspace.workspaceFolders![0].uri.path,
-        fields: ["subject", "hash", "authorDate"] as const,
+        fields: ["subject", "authorName", "authorDate"] as const,
         since: oldestTimeyDatapoint.toLocaleDateString(), // i sure do hope this is correct, cuz the documentation fokis sucks lol
     };
 
@@ -198,7 +200,7 @@ export async function getCommitInfos() : Promise<CommitInfo[] | undefined>{
     
     for (const commit of commits) {
         toReturn.push({
-            hash: commit.hash,
+            author: commit.authorName,
             message: commit.subject,
             time: new Date(commit.authorDate),
         });

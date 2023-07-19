@@ -26,10 +26,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// load configuration
 	const config = vscode.workspace.getConfiguration('timeyWimey');
-	const inactiveInterval = 1000 * 60 * (config.get<number>('inactivityInterval') ?? 1); // how long till user considered inactive
-	const workingInterval = 1000 * 60 * (config.get<number>('sessionActiveInterval') ?? 3); // how long till check no unexpected crash
-	const userName = config.get<string>('userName') ?? '';
-
+	let inactiveInterval = 1000 * 60 * (config.get<number>('inactivityInterval') ?? 1); // how long till user considered inactive
+	let workingInterval = 1000 * 60 * (config.get<number>('sessionActiveInterval') ?? 3); // how long till check no unexpected crash
+	let userName = config.get<string>('userName') ?? '';
 
 	// create icon
 	const icon = new TimeyIcon();
@@ -58,6 +57,21 @@ export async function activate(context: vscode.ExtensionContext) {
 			async callback() {
 				if (isCurrentlyActive()) await recordWorking();
 				else progressTimer.stop();
+			}
+		})
+	);
+
+	// subscribe to configuration changes
+	subscribe(
+		vscode.workspace.onDidChangeConfiguration(async (event) => {
+			if (event.affectsConfiguration('timeyWimey.inactivityInterval')) {
+				inactiveInterval = 1000 * 60 * (config.get<number>('inactivityInterval') ?? 1);
+			}
+			if (event.affectsConfiguration('timeyWimey.sessionActiveInterval')) {
+				workingInterval = 1000 * 60 * (config.get<number>('sessionActiveInterval') ?? 3);
+			}
+			if (event.affectsConfiguration('timeyWimey.userName')) {
+				userName = config.get<string>('userName') ?? '';
 			}
 		})
 	);

@@ -4,7 +4,7 @@ import { File, getCommitInfos, getFileNamesInFolder, getProjectPaths, getWorkspa
 
 
 interface CodingTimePerCommit {
-    commitHash: string;
+    commitAuthor: string;
     commitMessage: string;
     commitTime: Date;
     userNames: string[];
@@ -53,7 +53,7 @@ async function calculateTimePerCommit(projectTimeyFolderUri: string): Promise<Co
     }
 
     timesPerCommit.push({
-        commitHash: firstCommit!.hash,
+        commitAuthor: firstCommit!.author,
         commitMessage: firstCommit!.message,
         commitTime: firstCommit!.time,
         userNames: firstCommitsUsers,
@@ -104,7 +104,7 @@ async function calculateTimePerCommit(projectTimeyFolderUri: string): Promise<Co
 
         // when all user per this commit are done, add this commit to the list
         timesPerCommit.push({
-            commitHash: lateCommit.hash,
+            commitAuthor: lateCommit.author,
             commitMessage: lateCommit.message,
             commitTime: lateCommit.time,
             userNames: users,
@@ -124,7 +124,7 @@ export async function prettyOutputTimeCalcPerCommit(projectTimeyFolderUri?: stri
     let stringData = "";
 
     for (const commit of commits) {
-        stringData += `## ${commit.commitHash} - ${commit.commitMessage}\n`;
+        stringData += `## Commit by ${commit.commitAuthor} from ${commit.commitTime.toDateString()} ("${commit.commitMessage}")\n`;
         for (let i = 0; i < commit.userNames.length; i++) {
             stringData += `${commit.userNames[i]}: ${commit.hoursSpent[i].toFixed(2)} hours\n`;
         }
