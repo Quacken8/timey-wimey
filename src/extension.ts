@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Timer } from './timer';
-import { recordWorking, recordEnd, recordStart, checkForUnfinishedData, getUserLogsFile } from './fs';
+import { recordWorking, recordEnd, recordStart, checkForUnfinishedData, getUserLogsFile, removeWorkingEntries } from './fs';
 import { TimeyIcon } from './icon';
 import { prettyOutputTimeCalc, prettyOutputTimeCalcForUserAllDirs, prettyOutputTimeCalcPerCommit } from './timeCalculator';
 import { recordProjectPathIfNotExists } from './fs';
@@ -104,6 +104,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	// register showStats command
 	subscribe(
 		vscode.commands.registerCommand('timeyWimey.showStats', async () => {
+			const userFilename = await getUserLogsFile();
+			await removeWorkingEntries(userFilename);
 			const documentUri = vscode.Uri.parse('virtual:Timey Wimey stats');
 			const documentContent = `# Time data for this project\n=================\n${await prettyOutputTimeCalc()}`;
 
@@ -159,6 +161,18 @@ export async function activate(context: vscode.ExtensionContext) {
 			vscode.workspace.openTextDocument(documentUri).then((doc) => {
 				vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
 			});
+		})
+	);
+
+	// register stop command
+	subscribe(
+		vscode.commands.registerCommand('timeyWimey.stop', async () => {
+			if (isCurrentlyActive()) {
+				await recordEnd();
+			}
+			activityTimer.stop();
+			progressTimer.stop();
+			icon.sleep();
 		})
 	);
 

@@ -177,8 +177,6 @@ export async function calculateTimePerDWM(projectTimeyFolderUri: string): Promis
     for (const userFilename of userFilenames) {
         const userName = userFilename.split('/')[userFilename.split('/').length - 1].split('.')[0]
 
-        await removeWorkingEntries(userFilename);
-
         const fileContents = (await fs.readFile(userFilename, 'utf8')).split('\n');
 
         const starts = fileContents.filter(line => line.endsWith('start'));

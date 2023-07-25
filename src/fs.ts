@@ -4,7 +4,7 @@ import { homedir } from 'os';
 import { join as joinPaths } from 'path';
 import { GitlogOptions, gitlogPromise } from 'gitlog';
 
-async function fileExists(path: string) {
+async function doesFileExist(path: string) {
     try {
         const stats = await fs.stat(path);
         if (stats.isFile()) return true;
@@ -46,7 +46,7 @@ async function getUserHomeTimeyDir() {
 
 async function getProjectPathsFile() {
     const path = joinPaths(await getUserHomeTimeyDir(), "project-paths.txt");
-    if (!await fileExists(path)) await fs.writeFile(path, "", "utf-8");
+    if (!await doesFileExist(path)) await fs.writeFile(path, "", "utf-8");
     return path;
 }
 
@@ -75,7 +75,7 @@ export async function getWorkspaceTimeyDir() {
 
 export async function getUserLogsFile() {
     const path = joinPaths(await getWorkspaceTimeyDir(), `/${await getUserName()}.txt`);
-    if (!await fileExists(path)) {
+    if (!await doesFileExist(path)) {
         await fs.writeFile(path, "", "utf-8");
         await createGitignoreIfNeeded();
     }
@@ -106,7 +106,7 @@ export async function createGitignoreIfNeeded() {
 /** Remove all lines ending with "working" from file */
 export async function removeWorkingEntries(path?: string) {
     path ??= await getUserLogsFile();
-    const lines = (await fs.readFile(path, 'utf8')).split('\n');
+    const lines = (await fs.readFile(path, 'utf8')).split('\n').filter(line => line != "");
     const newLines = lines.filter(line => !line.endsWith('working'));
     await fs.writeFile(path, newLines.join('\n'));
 }
@@ -138,7 +138,7 @@ export async function checkForUnfinishedData() {
     if (data.endsWith('working')) {
         // unexpected exit, append end
 
-        const lines = data.split('\n');
+        const lines = data.split('\n').filter(line => line !== '');
         const lastLine = lines.at(-1)!;
         const timestamp = lastLine.split(' ')[0];
         const endLine = `\n${timestamp} end`;
@@ -154,8 +154,8 @@ export async function getOldestTimeyDatapoint() : Promise<Date> {
     const filenames = await getFileNamesInFolder(await getWorkspaceTimeyDir());
 
     const firstLines = await Promise.all(filenames.map(async (filename) => {
-        const fileContents = (await fs.readFile(filename, 'utf8')).trim();
-        const firstLine = fileContents.split('\n')[0];
+        const fileContents = (await fs.readFile(filename, 'utf8'));
+        const firstLine = fileContents.split('\n').filter( line => line != "" )[0];
         const firstLineTimestamp = firstLine.split(' ')[0];
         return parseInt(firstLineTimestamp);
     }));
