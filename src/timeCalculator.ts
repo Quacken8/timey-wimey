@@ -1,7 +1,134 @@
 import * as fs from 'fs/promises';
-import { assert } from 'console';
+import { assert, error } from 'console';
 import { File, getCommitInfos, getFileNamesInFolder, getProjectPaths, getWorkspaceTimeyDir, removeWorkingEntries } from './fs';
 
+
+enum EntryType {
+    START = 'start',
+    END = 'end',
+    WORKING = 'working'
+}
+
+/** Fixes the contents of the file by removing big gaps, fixing consecutive starts/stops, adds missing stops, fixes wrong formatting*/
+function fixFileContent(lines: string[], expectedWorkingGapMS: number): string[] {
+
+    interface WorkingSession {
+        start: number;
+        end: number | undefined;
+        workings: number[];
+    }
+
+    // split the lines into several arrays bounded by start and stop entries
+    let workingSessions: WorkingSession[] = [];
+
+    let currentSession: WorkingSession | undefined = undefined;
+
+    for (let line of lines) {
+        if (line.trim() === '') continue;   // skip empty lines (shouldn't be any, but just in case)
+
+        // first check correct line formatting
+        const splitLine = line.split(' ');
+        if (splitLine.length !== 2) {
+            // typical error of missing newline
+            const match = line.match(/^(\d+\s\D+)(\d+\s\D+)/);
+            if (match) {
+                // add the second part to the next line
+                lines.splice(lines.indexOf(line) + 1, 0, match[2] );
+                line = match[1];
+            }
+            else {
+                throw new Error(`Line "${line}" is not formatted correctly!`);
+            }
+        }
+        const time = parseInt(splitLine[0]);
+        const action = splitLine[1] as EntryType; // TODO check if this is a valid entry type
+
+        switch (action) {
+            case EntryType.START:
+
+                if (currentSession !== undefined) {
+                    // stop is missing from the last session, estimate it from working
+                    currentSession.end = currentSession.workings.at(-1) ? currentSession.workings.at(-1)! : currentSession.start;
+                    workingSessions.push(currentSession);
+                }
+
+                currentSession = {
+                    start: time,
+                    end: undefined,
+                    workings: []
+                };
+                break;
+            
+            case EntryType.END:
+                if (currentSession === undefined) {
+                    // start is missing from this session, we can't do anything
+                    continue;
+                }
+                // check whether there hasn't been too big of a gap between end and last working
+                const lastWorkingEntry = currentSession.workings.at(-1);
+                if (lastWorkingEntry !== undefined && Math.abs(time - lastWorkingEntry) > 3 * expectedWorkingGapMS) {
+                    // gap too big, split the session
+                    currentSession.end = lastWorkingEntry;
+                    workingSessions.push(currentSession);
+                    currentSession = {
+                        start: lastWorkingEntry,
+                        end: undefined,
+                        workings: []
+                    };
+                }
+                currentSession.end = time;
+                workingSessions.push(currentSession);
+                currentSession = undefined;
+                break;
+            
+            case EntryType.WORKING:
+                if (currentSession === undefined) {
+                    // start is missing from this session, let's start now
+                    currentSession = {
+                        start: time,
+                        end: undefined,
+                        workings: []
+                    };
+                }
+                // check whether there hasn't been too big of a gap between end and last working
+                const lastWorking = currentSession.workings.at(-1);
+                if (lastWorking !== undefined && Math.abs(time - lastWorking) > 3 * expectedWorkingGapMS) {
+                    // gap too big, split the session
+                    currentSession.end = lastWorking;
+                    workingSessions.push(currentSession);
+                    currentSession = {
+                        start: lastWorking,
+                        end: undefined,
+                        workings: []
+                    };
+                }
+
+                currentSession.workings.push(time);
+                break;
+            
+            default:
+                break;
+        }
+    }
+    // now that we went through all the lines, we need to check if the last session has an end
+    if (currentSession !== undefined) {
+        // stop is missing from the last session, estimate it from working
+        currentSession.end = currentSession.workings.at(-1) ? currentSession.workings.at(-1)! : currentSession.start;
+        workingSessions.push(currentSession);
+    }
+
+    // now we have all the sessions fixed, we need to merge them back into one array
+    let fixedLines: string[] = [];
+    for (const session of workingSessions) {
+        fixedLines.push(`${session.start} ${EntryType.START}`);
+        for (const working of session.workings) {
+            fixedLines.push(`${working} ${EntryType.WORKING}`);
+        }
+        fixedLines.push(`${session.end} ${EntryType.END}`);
+    }
+
+    return fixedLines;
+}
 
 interface CodingTimePerCommit {
     commitAuthor: string;
@@ -13,7 +140,7 @@ interface CodingTimePerCommit {
 
 // returns a list of commits and the time spend between them per user
 async function calculateTimePerCommit(projectTimeyFolderUri: string): Promise<CodingTimePerCommit[]> {
-        
+
     // these filenames double as usernames
     const filenames = await getFileNamesInFolder(projectTimeyFolderUri);
 
@@ -34,7 +161,7 @@ async function calculateTimePerCommit(projectTimeyFolderUri: string): Promise<Co
     }));
 
     // now go through commits and find the time spent between them per user
-    let timesPerCommit : CodingTimePerCommit[] = [];
+    let timesPerCommit: CodingTimePerCommit[] = [];
 
     // treating first commit as a special case
     const firstCommit = commits[0];
@@ -118,7 +245,7 @@ async function calculateTimePerCommit(projectTimeyFolderUri: string): Promise<Co
 
 export async function prettyOutputTimeCalcPerCommit(projectTimeyFolderUri?: string): Promise<string> {
     projectTimeyFolderUri ??= await getWorkspaceTimeyDir();
-    
+
     const commits = await calculateTimePerCommit(projectTimeyFolderUri);
 
     let stringData = "";
