@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
-import * as fs from 'fs/promises';
-import { homedir } from 'os';
-import { join as joinPaths } from 'path';
-import { GitlogOptions, gitlogPromise } from 'gitlog';
+import * as vscode from "vscode";
+import * as fs from "fs/promises";
+import { homedir } from "os";
+import { join as joinPaths } from "path";
+import { GitlogOptions, gitlogPromise } from "gitlog";
 
 async function doesFileExist(path: string) {
     try {
@@ -10,13 +10,16 @@ async function doesFileExist(path: string) {
         if (stats.isFile()) return true;
         return false;
     } catch (e) {
-        if (e instanceof Error && 'code' in e && e.code === 'ENOENT') return false;
+        if (e instanceof Error && "code" in e && e.code === "ENOENT")
+            return false;
         throw e;
     }
 }
 
 // returns a list of all file names in a folder
-export async function getFileNamesInFolder(folderPath: string): Promise<string[]> {
+export async function getFileNamesInFolder(
+    folderPath: string
+): Promise<string[]> {
     const files: string[] = [];
 
     // Read the contents of the folder
@@ -46,36 +49,46 @@ async function getUserHomeTimeyDir() {
 
 async function getProjectPathsFile() {
     const path = joinPaths(await getUserHomeTimeyDir(), "project-paths.txt");
-    if (!await doesFileExist(path)) await fs.writeFile(path, "", "utf-8");
+    if (!(await doesFileExist(path))) await fs.writeFile(path, "", "utf-8");
     return path;
 }
 
 export async function getProjectPaths() {
     const filePath = await getProjectPathsFile();
 
-    const pathsAsText = await fs.readFile(filePath, 'utf8');
+    const pathsAsText = await fs.readFile(filePath, "utf8");
     return new Set(pathsAsText.split("\n"));
 }
 
 export async function recordProjectPathIfNotExists() {
-    const localPath = (await getUserLogsFile()).split("/").slice(0, -1).join("/");
+    const localPath = (await getUserLogsFile())
+        .split("/")
+        .slice(0, -1)
+        .join("/");
     const globalPath = await getProjectPathsFile();
     const paths = await getProjectPaths();
 
-    if (!paths.has(localPath)) await fs.appendFile(globalPath, localPath + "\n");
+    if (!paths.has(localPath))
+        await fs.appendFile(globalPath, localPath + "\n");
 }
 
 // Per-workspace
 
 export async function getWorkspaceTimeyDir() {
-    const path = joinPaths(vscode.workspace.workspaceFolders![0].uri.path, '.vscode/timeyWimey');
+    const path = joinPaths(
+        vscode.workspace.workspaceFolders![0].uri.path,
+        ".vscode/timeyWimey"
+    );
     await fs.mkdir(path, { recursive: true });
     return path;
 }
 
 export async function getUserLogsFile() {
-    const path = joinPaths(await getWorkspaceTimeyDir(), `/${await getUserName()}.txt`);
-    if (!await doesFileExist(path)) {
+    const path = joinPaths(
+        await getWorkspaceTimeyDir(),
+        `/${await getUserName()}.txt`
+    );
+    if (!(await doesFileExist(path))) {
         await fs.writeFile(path, "", "utf-8");
         await createGitignoreIfNeeded();
     }
@@ -83,32 +96,50 @@ export async function getUserLogsFile() {
 }
 
 export async function getUserName(): Promise<string> {
-    let name = vscode.workspace.getConfiguration('timeyWimey').get<string>('userName');
+    let name = vscode.workspace
+        .getConfiguration("timeyWimey")
+        .get<string>("userName");
 
     while (name === undefined) {
         name = await vscode.window.showInputBox({
             prompt: "Enter your name for Timey Wimey",
-            placeHolder: "John Doe"
+            placeHolder: "John Doe",
         });
 
-        await vscode.workspace.getConfiguration().update("timeyWimey.userName", name, vscode.ConfigurationTarget.Global);
+        await vscode.workspace
+            .getConfiguration()
+            .update(
+                "timeyWimey.userName",
+                name,
+                vscode.ConfigurationTarget.Global
+            );
     }
 
     return name;
 }
 
 export async function createGitignoreIfNeeded() {
-    if (!vscode.workspace.getConfiguration('timeyWimey').get<boolean>('includeInGitIgnore')) return;
-    const gitIgnorePath = joinPaths(vscode.workspace.workspaceFolders![0].uri.path, '.gitignore');
-    await fs.appendFile(gitIgnorePath, '\n.vscode/timeyWimey\n');
+    if (
+        !vscode.workspace
+            .getConfiguration("timeyWimey")
+            .get<boolean>("includeInGitIgnore")
+    )
+        return;
+    const gitIgnorePath = joinPaths(
+        vscode.workspace.workspaceFolders![0].uri.path,
+        ".gitignore"
+    );
+    await fs.appendFile(gitIgnorePath, "\n.vscode/timeyWimey\n");
 }
 
 /** Remove all lines ending with "working" from file */
 export async function removeWorkingEntries(path?: string) {
     path ??= await getUserLogsFile();
-    const lines = (await fs.readFile(path, 'utf8')).split('\n').filter(line => line != "");
-    const newLines = lines.filter(line => !line.endsWith('working'));
-    await fs.writeFile(path, newLines.join('\n'));
+    const lines = (await fs.readFile(path, "utf8"))
+        .split("\n")
+        .filter((line) => line != "");
+    const newLines = lines.filter((line) => !line.endsWith("working"));
+    await fs.writeFile(path, newLines.join("\n"));
 }
 
 /** Append working to file with timestamp */
@@ -133,14 +164,14 @@ export async function checkForUnfinishedData() {
     const path = await getUserLogsFile();
 
     // look at last line of file
-    const data = await fs.readFile(path, 'utf8');
+    const data = await fs.readFile(path, "utf8");
 
-    if (data.endsWith('working')) {
+    if (!data.endsWith("end")) {
         // unexpected exit, append end
 
-        const lines = data.split('\n').filter(line => line !== '');
+        const lines = data.split("\n").filter((line) => line !== "");
         const lastLine = lines.at(-1)!;
-        const timestamp = lastLine.split(' ')[0];
+        const timestamp = lastLine.split(" ")[0];
         const endLine = `\n${timestamp} end`;
 
         await fs.appendFile(path, endLine);
@@ -148,19 +179,23 @@ export async function checkForUnfinishedData() {
 }
 
 // finds the oldest datapoint in this project across all users
-export async function getOldestTimeyDatapoint() : Promise<Date> {
+export async function getOldestTimeyDatapoint(): Promise<Date> {
     // just load the first line of every file and find the oldest
 
     const filenames = await getFileNamesInFolder(await getWorkspaceTimeyDir());
 
-    const firstLines = await Promise.all(filenames.map(async (filename) => {
-        const fileContents = (await fs.readFile(filename, 'utf8'));
-        const firstLine = fileContents.split('\n').filter( line => line != "" )[0];
-        const firstLineTimestamp = firstLine.split(' ')[0];
-        return parseInt(firstLineTimestamp);
-    }));
+    const firstLines = await Promise.all(
+        filenames.map(async (filename) => {
+            const fileContents = await fs.readFile(filename, "utf8");
+            const firstLine = fileContents
+                .split("\n")
+                .filter((line) => line != "")[0];
+            const firstLineTimestamp = firstLine.split(" ")[0];
+            return parseInt(firstLineTimestamp);
+        })
+    );
 
-    const oldest = Math.min(...(firstLines));
+    const oldest = Math.min(...firstLines);
 
     return new Date(oldest);
 }
@@ -176,13 +211,15 @@ export interface File {
     lines: string[];
 }
 
-export async function getCommitInfos() : Promise<CommitInfo[] | undefined>{
+export async function getCommitInfos(): Promise<CommitInfo[] | undefined> {
     // check there is a .git folder
 
     const oldestTimeyDatapoint = await getOldestTimeyDatapoint();
 
     // get all commits since oldest datapoint
-    const gitlogOptions: GitlogOptions<"subject" | "authorDate" | "authorName"> = {
+    const gitlogOptions: GitlogOptions<
+        "subject" | "authorDate" | "authorName"
+    > = {
         repo: vscode.workspace.workspaceFolders![0].uri.path,
         fields: ["subject", "authorName", "authorDate"] as const,
         since: oldestTimeyDatapoint.toLocaleDateString(), // i sure do hope this is correct, cuz the documentation fokis sucks lol
@@ -191,13 +228,12 @@ export async function getCommitInfos() : Promise<CommitInfo[] | undefined>{
     let commits;
     try {
         commits = await gitlogPromise(gitlogOptions);
-    }
-    catch (e) {
+    } catch (e) {
         return undefined;
     }
 
     let toReturn: CommitInfo[] = [];
-    
+
     for (const commit of commits) {
         toReturn.push({
             author: commit.authorName,
