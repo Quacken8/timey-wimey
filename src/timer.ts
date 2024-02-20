@@ -1,6 +1,6 @@
-import dayjs = require("dayjs");
 import { Checker, DBColumnEntry } from "./types";
 import { workspaceChecker } from "./checkers";
+import dayjs from "dayjs";
 
 interface Readable<T> {
   get(): T;
