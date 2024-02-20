@@ -97,12 +97,12 @@ export class RepeatingSaver {
   #interval?: number;
 
   #startIfAllDefined = () => {
+    this.#timer?.dispose();
     if (
       this.#saveToDB !== undefined &&
       this.#interval !== undefined &&
       this.#checkers.length > 0
     ) {
-      this.#timer?.dispose();
       this.#timer = new Timer({
         interval: this.#interval,
         repeating: true,
