@@ -6,6 +6,7 @@ import { RepeatingSaver } from "./timer";
 import * as vscode from "vscode";
 import { subscribe } from "./utils";
 
+let oldDbFile: string | undefined;
 export function setTimerSettingsAndSubscribe(
   repeatingSaver: RepeatingSaver,
   context: vscode.ExtensionContext
@@ -18,8 +19,11 @@ export function setTimerSettingsAndSubscribe(
 
     const dbFile = settings.get<string>("moveDBOnFileChange")!;
     const moveOldDB = settings.get<boolean>("moveDBOnFileChange")!;
-    // FIXME implement moving old db
+    if (moveOldDB && oldDbFile !== dbFile) {
+      // FIXME implement moving old db
+    }
     const db = setUpDB(dbFile);
+    oldDbFile = dbFile;
     repeatingSaver.insertToDB = (row) => insertToDB(db, row);
   };
 
