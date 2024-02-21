@@ -89,54 +89,47 @@ export class Timer {
 
 /** Repeating timer that calls upon all checkers to check status of whatever you want to track and saves it to the database along with a timestamp and which workspace this is running in */
 export class RepeatingSaver {
-  #timer?: Timer;
-  #checkers: Checker[] = [];
-  #insertToDB?: (row: Promise<CheckerOutput>[]) => void;
-  #interval?: number;
-
-  #startIfAllDefined = () => {
-    this.#timer?.dispose();
-    if (
-      this.#insertToDB !== undefined &&
-      this.#interval !== undefined &&
-      this.#checkers.length > 0
-    ) {
-      this.#timer = new Timer({
-        interval: this.#interval,
-        repeating: true,
-        callback: () => {
-          this.#insertToDB!([...this.#checkers.map((checker) => checker())]);
-        },
-      });
-      this.#timer.start();
-    }
-  };
-
-  set checkers(value: Checker[]) {
-    this.#checkers = value;
-    this.#startIfAllDefined();
-  }
-
-  set interval(value: number) {
-    this.#interval = value;
-    this.#startIfAllDefined();
-  }
-
-  set insertToDB(value: (row: Promise<CheckerOutput>[]) => Promise<void>) {
-    this.#insertToDB = value;
-    this.#startIfAllDefined();
-  }
+  timer?: Timer;
+  checkers: Checker[] = [];
+  insertToDB?: (row: Promise<CheckerOutput>[]) => void;
+  interval?: number;
 
   constructor() {}
 
   stopTimer() {
-    this.#timer?.stop();
+    this.timer?.stop();
   }
-  startTimer() {
-    this.#startIfAllDefined();
+  startTimer():
+    | "started"
+    | { missing: "insertToDB" | "interval" | "checkers" } {
+    if (this.insertToDB === undefined) {
+      return { missing: "insertToDB" };
+    }
+    if (this.interval === undefined) {
+      return { missing: "interval" };
+    }
+    if (this.checkers.length === 0) {
+      return { missing: "checkers" };
+    }
+
+    this.timer = new Timer({
+      interval: this.interval,
+      repeating: true,
+      callback: () => {
+        this.insertToDB!([
+          Promise.resolve({
+            key: "interval_minutes",
+            value: this.interval! / 1000 / 60,
+          }),
+          ...this.checkers.map((checker) => checker()),
+        ]);
+      },
+    });
+    this.timer.start();
+    return "started";
   }
 
   dispose() {
-    this.#timer?.dispose();
+    this.timer?.dispose();
   }
 }

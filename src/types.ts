@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 
 export type CheckerOutput =
   | TimeEntry
+  | IntervalEntry
   | WorkingEntry
   | WindowFocusEntry
   | WorkspaceEntry
@@ -16,6 +17,11 @@ export type CheckerSetuper = (context: vscode.ExtensionContext) => Checker;
 export type TimeEntry = {
   key: "timestamp";
   value: dayjs.Dayjs;
+};
+
+export type IntervalEntry = {
+  key: "interval_minutes";
+  value: number;
 };
 
 export type WorkingEntry = {

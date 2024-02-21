@@ -5,6 +5,7 @@ import { insertToDB, setUpDB } from "./db/db";
 import { RepeatingSaver } from "./timer";
 import * as vscode from "vscode";
 import { subscribe } from "./utils";
+import * as fs from "fs";
 
 let oldDbFile: string | undefined;
 export function setTimerSettingsAndSubscribe(
@@ -12,20 +13,25 @@ export function setTimerSettingsAndSubscribe(
   context: vscode.ExtensionContext
 ) {
   const settings = vscode.workspace.getConfiguration("timeyboogaloo");
-  const onSettingsChanged = () => {
+  const onSettingsChanged = async () => {
     repeatingSaver.interval = settings.get<number>("interval")! * 60 * 1000;
 
     repeatingSaver.checkers = defaultCheckers.map((setup) => setup(context));
     // FIXME implement custom checker; also do we want the user to deselect default checkers?
 
-    const dbFile = settings.get<string>("moveDBOnFileChange")!;
+    const dbFile = settings.get<string>("databasePath")!;
     const moveOldDB = settings.get<boolean>("moveDBOnFileChange")!;
-    if (moveOldDB && oldDbFile !== dbFile) {
-      // FIXME implement moving old db
+    if (moveOldDB && oldDbFile && oldDbFile !== dbFile) {
+      await fs.promises.rename(oldDbFile, dbFile);
     }
     const db = setUpDB(dbFile);
     oldDbFile = dbFile;
     repeatingSaver.insertToDB = (row) => insertToDB(db, row);
+
+    const weGoin = repeatingSaver.startTimer();
+    if (weGoin !== "started") {
+      throw new Error(`Missing ${weGoin.missing} from the timer`);
+    }
   };
 
   onSettingsChanged();

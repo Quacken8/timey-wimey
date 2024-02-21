@@ -1,14 +1,11 @@
 import {
-  integer,
-  pgEnum,
   pgTable,
   serial,
-  uniqueIndex,
-  varchar,
   date,
   text,
   json,
   boolean,
+  real,
 } from "drizzle-orm/pg-core";
 import { match, P } from "ts-pattern";
 import { CheckerOutput } from "../types";
@@ -16,6 +13,7 @@ import { CheckerOutput } from "../types";
 export const entries = pgTable("entries", {
   id: serial("id").primaryKey(),
   timestamp: date("date").notNull(),
+  interval_minutes: real("interval_minutes").notNull(),
   working: boolean("working").notNull(),
   window_focused: boolean("window_focused").notNull(),
   workspace: text("workspace"),
@@ -51,6 +49,9 @@ export function parseForDB(row: CheckerOutput[]): DBRowInsert {
       })
       .with({ key: "custom" }, (e) => {
         parsedRow.custom = e.value;
+      })
+      .with({ key: "interval_minutes" }, (e) => {
+        parsedRow.interval_minutes = e.value;
       })
       .exhaustive();
   }
