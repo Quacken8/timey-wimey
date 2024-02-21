@@ -16,6 +16,7 @@ export function setTimerSettingsAndSubscribe(
     repeatingSaver.interval = settings.get<number>("interval")! * 60 * 1000;
 
     repeatingSaver.checkers = defaultCheckers.map((setup) => setup(context));
+    // FIXME implement custom checker; also do we want the user to deselect default checkers?
 
     const dbFile = settings.get<string>("moveDBOnFileChange")!;
     const moveOldDB = settings.get<boolean>("moveDBOnFileChange")!;

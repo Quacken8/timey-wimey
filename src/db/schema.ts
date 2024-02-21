@@ -57,7 +57,7 @@ export function parseForDB(row: CheckerOutput[]): DBRowInsert {
 
   if (
     Object.keys(dummyInsert).every(
-      (key) => key === "id" || parsedRow.hasOwnProperty(key)
+      (key) => (key === "id") !== parsedRow.hasOwnProperty(key) // what a weird way to xor
     )
   ) {
     return parsedRow as DBRowInsert;
