@@ -1,7 +1,23 @@
 import { Checker, CheckerSetuper } from "./types";
 import * as vscode from "vscode";
 import { subscribe } from "./utils";
-import { simpleGit, SimpleGit, CleanOptions } from "simple-git";
+import { simpleGit, SimpleGit } from "simple-git";
+import dayjs from "dayjs";
+
+/** Checks current time */
+export const timeChecherSetup: CheckerSetuper = () => {
+  return async () => {
+    return {
+      key: "timestamp",
+      value: dayjs(),
+    };
+  };
+};
+
+export type TimeEntry = {
+  key: "timestamp";
+  value: dayjs.Dayjs;
+};
 
 /** Sets up a checker that checks whether the user has worked in the last cycle */
 export const workingCheckerSetup: CheckerSetuper = (context) => {
@@ -13,12 +29,12 @@ export const workingCheckerSetup: CheckerSetuper = (context) => {
     context
   );
 
-  return () => {
+  return async () => {
     const wasWorking = working;
     working = false;
     return {
-      header: "Working",
-      data: wasWorking,
+      key: "working",
+      value: wasWorking,
     };
   };
 };
@@ -32,42 +48,63 @@ export const windowsFocusedCheckerSetup: CheckerSetuper = (context) => {
     }),
     context
   );
-  return () => {
+  return async () => {
     const wasFocused = focused;
     focused = false;
     return {
-      header: "Focused",
-      data: wasFocused,
+      key: "window_focused",
+      value: wasFocused,
     };
   };
 };
 
-export const workspaceChecker: Checker = () => {
-  return {
-    header: "Workspace",
-    data:
-      vscode.workspace.workspaceFolders?.[0].uri ??
-      "No workspace, just staring blankly into the void, contemplating the life choices that led to this moment.",
+/** Checks what is the root of the current workspace */
+export const worksapceCheckerSetup: CheckerSetuper = () => {
+  return async () => {
+    return {
+      key: "workspace",
+      value: vscode.workspace.workspaceFolders?.[0].uri,
+    };
   };
 };
 
+/** Checks current open file */
+export const openFileCheckerSetup: CheckerSetuper = () => {
+  return async () => {
+    return {
+      key: "current_file",
+      value: vscode.window.activeTextEditor?.document.fileName,
+    };
+  };
+};
+
+/** Checks hash of last commit */
 export const lastCommitCheckerSetup: CheckerSetuper = () => {
   const git: SimpleGit = simpleGit();
-  return () => {
+  return async () => {
     const rootFile = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-    return {
-      header: "Last Commit Hash",
-      data: rootFile
-        ? git
+    let hash;
+    try {
+      hash = rootFile
+        ? await git
             .log({ file: rootFile })
             .then((log) => log.latest?.hash ?? undefined)
-        : undefined,
+        : undefined;
+    } catch (e) {
+      hash = undefined;
+    }
+    return {
+      key: "last_commit_hash",
+      value: hash,
     };
   };
 };
 
 export const defaultCheckers: CheckerSetuper[] = [
-  workingCheckerSetup,
+  timeChecherSetup,
   windowsFocusedCheckerSetup,
+  workingCheckerSetup,
+  worksapceCheckerSetup,
+  openFileCheckerSetup,
   lastCommitCheckerSetup,
 ];

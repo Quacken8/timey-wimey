@@ -1,6 +1,4 @@
-import { Checker, DBColumnEntry } from "./types";
-import { workspaceChecker } from "./checkers";
-import dayjs from "dayjs";
+import { Checker, CheckerOutput } from "./types";
 
 interface Readable<T> {
   get(): T;
@@ -93,13 +91,13 @@ export class Timer {
 export class RepeatingSaver {
   #timer?: Timer;
   #checkers: Checker[] = [];
-  #saveToDB?: (row: DBColumnEntry[]) => void;
+  #insertToDB?: (row: Promise<CheckerOutput>[]) => void;
   #interval?: number;
 
   #startIfAllDefined = () => {
     this.#timer?.dispose();
     if (
-      this.#saveToDB !== undefined &&
+      this.#insertToDB !== undefined &&
       this.#interval !== undefined &&
       this.#checkers.length > 0
     ) {
@@ -107,11 +105,7 @@ export class RepeatingSaver {
         interval: this.#interval,
         repeating: true,
         callback: () => {
-          this.#saveToDB!([
-            { header: "timestamp", data: dayjs() },
-            workspaceChecker(),
-            ...this.checkers.map((checker) => checker()),
-          ]);
+          this.#insertToDB!([...this.#checkers.map((checker) => checker())]);
         },
       });
       this.#timer.start();
@@ -119,17 +113,17 @@ export class RepeatingSaver {
   };
 
   set checkers(value: Checker[]) {
-    this.checkers = value;
+    this.#checkers = value;
     this.#startIfAllDefined();
   }
 
   set interval(value: number) {
-    this.interval = value;
+    this.#interval = value;
     this.#startIfAllDefined();
   }
 
-  set saveToDB(value: (row: DBColumnEntry[]) => void) {
-    this.saveToDB = value;
+  set insertToDB(value: (row: Promise<CheckerOutput>[]) => Promise<void>) {
+    this.#insertToDB = value;
     this.#startIfAllDefined();
   }
 

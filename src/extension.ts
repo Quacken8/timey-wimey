@@ -2,16 +2,14 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import { RepeatingSaver } from "./timer";
-import { defaultCheckers } from "./checkers";
-import { DBColumnEntry } from "./types";
-import { saveToDB } from "./db";
+import { insertToDB } from "./db/db";
 import { setTimerSettingsAndSubscribe } from "./settingsHandler";
 
 const repeatingSaver = new RepeatingSaver();
 
 export function activate(context: vscode.ExtensionContext) {
+  console.log("Yo waddup");
   // set up db
-  repeatingSaver.saveToDB = saveToDB;
 
   setTimerSettingsAndSubscribe(repeatingSaver, context);
 

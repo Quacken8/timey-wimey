@@ -9,7 +9,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "workspaceContains:*"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -17,7 +19,27 @@
         "command": "timeyboogaloo.helloWorld",
         "title": "Hello World"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "TimeyBoogaloo",
+      "properties": {
+        "timeyboogaloo.databasePath": {
+          "type": "string",
+          "default": "~/.vscode/timeyBoogaloo/timey.db",
+          "description": "Path to the database file"
+        },
+        "timeyboogaloo.moveDBOnFileChange": {
+          "type": "boolean",
+          "default": true,
+          "description": "Move data from the old database to the new one when the database file changes"
+        },
+        "timeyBoogaloo.writeInterval": {
+          "type": "number",
+          "default": 5,
+          "description": "Interval in minutes to write to the database"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
@@ -28,6 +50,7 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.9",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
@@ -41,8 +64,12 @@
     "typescript": "^5.1.3"
   },
   "dependencies": {
+    "better-sqlite3": "^9.4.1",
     "dayjs": "^1.11.10",
+    "drizzle-kit": "^0.20.14",
+    "drizzle-orm": "^0.29.3",
     "libchartium": "^0.0.31",
-    "simple-git": "^3.22.0"
+    "simple-git": "^3.22.0",
+    "ts-pattern": "^5.0.8"
   }
 }
