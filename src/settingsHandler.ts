@@ -15,7 +15,7 @@ export function setTimerSettingsAndSubscribe(
   const settings = vscode.workspace.getConfiguration("timeyboogaloo");
   const onSettingsChanged = async () => {
     repeatingSaver.interval =
-      (settings.get<number>("writeInterval")! * 60 * 1000) / 60;
+      (settings.get<number>("writeInterval")! * 60 * 1000) / 60; //FIXME for debug reasons
 
     // FIXME implement custom checker; also do we want the user to deselect default checkers?
     const customChecker: Checker = async () => {

@@ -1,8 +1,8 @@
 import { Checker, CheckerSetuper } from "./types";
 import * as vscode from "vscode";
 import { subscribe } from "./utils";
-import { simpleGit, SimpleGit } from "simple-git";
 import dayjs from "dayjs";
+import { gitlogPromise } from "gitlog";
 
 /** Checks current time */
 export const timeChecherSetup: CheckerSetuper = () => {
@@ -49,11 +49,9 @@ export const windowsFocusedCheckerSetup: CheckerSetuper = (context) => {
     context
   );
   return async () => {
-    const wasFocused = focused;
-    focused = false;
     return {
       key: "window_focused",
-      value: wasFocused,
+      value: focused,
     };
   };
 };
@@ -80,15 +78,16 @@ export const openFileCheckerSetup: CheckerSetuper = () => {
 
 /** Checks hash of last commit */
 export const lastCommitCheckerSetup: CheckerSetuper = () => {
-  const git: SimpleGit = simpleGit();
   return async () => {
-    const rootFile = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    const rootFolder = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
     let hash;
     try {
-      hash = rootFile
-        ? await git
-            .log({ file: rootFile })
-            .then((log) => log.latest?.hash ?? undefined)
+      hash = rootFolder
+        ? await gitlogPromise({
+            repo: rootFolder,
+            number: 1,
+            fields: ["hash"] as const,
+          }).then((log) => log[0].hash)
         : undefined;
     } catch (e) {
       hash = undefined;

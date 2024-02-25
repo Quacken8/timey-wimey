@@ -68,8 +68,8 @@
     "better-sqlite3": "^9.4.3",
     "dayjs": "^1.11.10",
     "drizzle-orm": "^0.29.3",
+    "gitlog": "^4.0.8",
     "libchartium": "^0.0.31",
-    "simple-git": "^3.22.0",
     "sqlocal": "^0.7.1",
     "ts-pattern": "^5.0.8",
     "tsx": "^4.7.1"
