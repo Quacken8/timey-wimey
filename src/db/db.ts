@@ -1,10 +1,10 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { CheckerOutput } from "../types";
+import { CheckerOutput, PromiseType } from "../types";
 import { entries, parseForDB } from "./schema";
 import * as fs from "fs";
 
-export function setUpDB(filePath: string) {
+export async function getDB(filePath: string) {
   let betterSqlite;
   try {
     betterSqlite = new Database(filePath);
@@ -13,7 +13,7 @@ export function setUpDB(filePath: string) {
       err instanceof TypeError &&
       err.message.includes("directory does not exist")
     ) {
-      fs.promises.mkdir(filePath, { recursive: true });
+      await fs.promises.mkdir(filePath, { recursive: true });
       betterSqlite = new Database(filePath);
     } else {
       throw err;
@@ -24,9 +24,10 @@ export function setUpDB(filePath: string) {
 }
 
 export const insertToDB = async (
-  db: ReturnType<typeof setUpDB>,
+  db: PromiseType<ReturnType<typeof getDB>>,
   row: Promise<CheckerOutput>[]
 ) => {
   const resolved = parseForDB(await Promise.all(row));
-  const insertResult = await db.insert(entries).values(resolved).execute();
+  const insertResult = db.insert(entries).values(resolved).run();
+  console.log(insertResult);
 };

@@ -1,6 +1,6 @@
 {
   "name": "timeyboogaloo",
-  "displayName": "timeyBoogaloo",
+  "displayName": "TimeyBoogaloo",
   "description": "Actually good coding time tracker",
   "version": "0.0.1",
   "engines": {
@@ -25,7 +25,7 @@
       "properties": {
         "timeyboogaloo.databasePath": {
           "type": "string",
-          "default": "~/.vscode/timeyBoogaloo",
+          "default": ".vscode/extensions/timeyBoogaloo/db",
           "description": "Path to the database folder"
         },
         "timeyboogaloo.moveDBOnFileChange": {
@@ -33,7 +33,7 @@
           "default": true,
           "description": "Move data from the old database to the new one when the database file changes"
         },
-        "timeyBoogaloo.writeInterval": {
+        "timeyboogaloo.writeInterval": {
           "type": "number",
           "default": 5,
           "description": "Interval in minutes to write to the database"
@@ -48,7 +48,8 @@
     "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "rebuild-sqlite": "pnpm electron-rebuild -f -w better-sqlite3 -v 27.2.3"
+    "rebuild-sqlite": "pnpm electron-rebuild -f -w better-sqlite3 -v 27.2.3",
+    "migrate": "tsx .drizzle/migrator.ts"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.6.0",
@@ -70,6 +71,7 @@
     "libchartium": "^0.0.31",
     "simple-git": "^3.22.0",
     "sqlocal": "^0.7.1",
-    "ts-pattern": "^5.0.8"
+    "ts-pattern": "^5.0.8",
+    "tsx": "^4.7.1"
   }
 }

@@ -1,6 +1,15 @@
 import dayjs from "dayjs";
 import * as vscode from "vscode";
 
+export type PromiseType<T> = T extends Promise<infer U> ? U : T;
+export type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
 export type CheckerOutput =
   | TimeEntry
   | IntervalEntry
@@ -51,5 +60,5 @@ export type LastCommitEntry = {
 
 export type CustomEntry = {
   key: "custom";
-  value: JSON;
+  value: JSONValue;
 };

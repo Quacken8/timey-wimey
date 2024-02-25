@@ -9,7 +9,6 @@ const repeatingSaver = new RepeatingSaver();
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Yo waddup");
-  // set up db
 
   setTimerSettingsAndSubscribe(repeatingSaver, context);
 

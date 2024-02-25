@@ -1,36 +1,31 @@
-import {
-  pgTable,
-  serial,
-  date,
-  text,
-  json,
-  boolean,
-  real,
-} from "drizzle-orm/pg-core";
 import { match, P } from "ts-pattern";
 import { CheckerOutput } from "../types";
+import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { getTableColumns } from "drizzle-orm";
 
-export const entries = pgTable("entries", {
-  id: serial("id").primaryKey(),
-  timestamp: date("date").notNull(),
+// FIXME implement name of db (possibly named after the user?)
+export const entries = sqliteTable("entries", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  timestamp: integer("date", { mode: "timestamp" }).notNull(),
   interval_minutes: real("interval_minutes").notNull(),
-  working: boolean("working").notNull(),
-  window_focused: boolean("window_focused").notNull(),
+  working: integer("working", { mode: "boolean" }).notNull(),
+  window_focused: integer("window_focused", { mode: "boolean" }).notNull(),
   workspace: text("workspace"),
   current_file: text("current_file"),
   last_commit_hash: text("last_commit_hash"),
-  custom: json("custom"),
+  custom: text("custom", { mode: "json" }),
 });
 
-const dummyInsert = entries.$inferInsert;
-export type DBRowInsert = Omit<typeof dummyInsert, "id">;
+export const tableCols = getTableColumns(entries);
+
+export type DBRowInsert = Omit<typeof entries.$inferInsert, "id">;
 
 export function parseForDB(row: CheckerOutput[]): DBRowInsert {
   let parsedRow: Partial<DBRowInsert> = {};
   for (const entry of row) {
     match(entry)
       .with({ key: "timestamp" }, (e) => {
-        parsedRow.timestamp = e.value.toISOString();
+        parsedRow.timestamp = e.value.toDate();
       })
       .with({ key: "workspace" }, (e) => {
         parsedRow.workspace = e.value?.toString();
@@ -48,7 +43,7 @@ export function parseForDB(row: CheckerOutput[]): DBRowInsert {
         parsedRow.window_focused = e.value;
       })
       .with({ key: "custom" }, (e) => {
-        parsedRow.custom = e.value;
+        parsedRow.custom = JSON.stringify(e.value);
       })
       .with({ key: "interval_minutes" }, (e) => {
         parsedRow.interval_minutes = e.value;
@@ -57,7 +52,7 @@ export function parseForDB(row: CheckerOutput[]): DBRowInsert {
   }
 
   if (
-    Object.keys(dummyInsert).every(
+    Object.keys(tableCols).every(
       (key) => (key === "id") !== parsedRow.hasOwnProperty(key) // what a weird way to xor
     )
   ) {

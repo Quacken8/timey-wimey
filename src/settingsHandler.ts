@@ -1,10 +1,11 @@
 import { defaultCheckers } from "./checkers";
-import { insertToDB, setUpDB } from "./db/db";
+import { insertToDB, getDB } from "./db/db";
 import { RepeatingSaver } from "./timer";
 import * as vscode from "vscode";
 import { subscribe } from "./utils";
 import * as fs from "fs";
 import path from "path";
+import { Checker, CheckerSetuper } from "./types";
 
 let oldDbFile: string | undefined;
 export function setTimerSettingsAndSubscribe(
@@ -13,21 +14,36 @@ export function setTimerSettingsAndSubscribe(
 ) {
   const settings = vscode.workspace.getConfiguration("timeyboogaloo");
   const onSettingsChanged = async () => {
-    repeatingSaver.interval = settings.get<number>("interval")! * 60 * 1000;
+    repeatingSaver.interval =
+      (settings.get<number>("writeInterval")! * 60 * 1000) / 60;
 
-    repeatingSaver.checkers = defaultCheckers.map((setup) => setup(context));
     // FIXME implement custom checker; also do we want the user to deselect default checkers?
+    const customChecker: Checker = async () => {
+      return {
+        key: "custom",
+        value: {
+          imJustAFool: "hell ye",
+          nombre: 4,
+        },
+      };
+    };
+    repeatingSaver.checkers = [
+      ...defaultCheckers.map((setup) => setup(context)),
+      customChecker,
+    ];
 
     const dbFolder = settings.get<string>("databasePath")!;
+    // FIXME implement name of db (possibly named after the user?)
     const dbName = "timey.db";
     let dbFile;
     try {
-      dbFile = path.parse(path.join(dbFolder, dbName)).dir;
+      path.parse(dbFolder);
+      dbFile = path.join(dbFolder, dbName);
     } catch (err) {
       if (err instanceof TypeError) {
         // FIXME apply default
         vscode.window.showErrorMessage(
-          `${dbFolder} is not a valid path. Using old path instead.`
+          `${dbFolder} is not a valid folder path. Using old path instead.`
         );
         throw err;
       } else {
@@ -38,7 +54,8 @@ export function setTimerSettingsAndSubscribe(
     if (moveOldDB && oldDbFile && oldDbFile !== dbFile) {
       await fs.promises.rename(oldDbFile, dbFile);
     }
-    const db = setUpDB(dbFile);
+    console.log(dbFile);
+    const db = await getDB(dbFile);
     oldDbFile = dbFile;
     repeatingSaver.insertToDB = (row) => insertToDB(db, row);
 
@@ -50,7 +67,9 @@ export function setTimerSettingsAndSubscribe(
 
   onSettingsChanged();
   subscribe(
-    vscode.workspace.onDidChangeConfiguration(onSettingsChanged),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration("timeyboogaloo")) onSettingsChanged();
+    }),
     context
   );
 }
