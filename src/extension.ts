@@ -5,6 +5,7 @@ import { RepeatingSaver, StatusBarUpdater } from "./timer";
 import { insertToDB } from "./db/db";
 import { setTimerSettingsAndSubscribe } from "./settingsHandler";
 import { subscribeStatusBar } from "./ui/statusBar";
+import { subscribe } from "./utils";
 
 const repeatingSaver = new RepeatingSaver();
 const statusBarUpdater = new StatusBarUpdater();

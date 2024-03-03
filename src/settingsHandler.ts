@@ -9,7 +9,7 @@ import { Checker } from "./types";
 let oldDbFilePath: string | undefined;
 
 export function getInterval() {
-  const settings = vscode.workspace.getConfiguration("timeyboogaloo");
+  const settings = vscode.workspace.getConfiguration("timeyWimey");
   return (settings.get<number>("writeInterval")! * 60 * 1000) / 60; //FIXME for debug reasons
 }
 
@@ -17,7 +17,7 @@ export function setTimerSettingsAndSubscribe(
   repeatingSaver: RepeatingSaver,
   context: vscode.ExtensionContext
 ) {
-  const settings = vscode.workspace.getConfiguration("timeyboogaloo");
+  const settings = vscode.workspace.getConfiguration("timeyWimey");
   const onSettingsChanged = async () => {
     repeatingSaver.interval = getInterval();
 
@@ -55,7 +55,7 @@ export function setTimerSettingsAndSubscribe(
   onSettingsChanged();
   subscribe(
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("timeyboogaloo")) onSettingsChanged();
+      if (e.affectsConfiguration("timeyWimey")) onSettingsChanged();
     }),
     context
   );

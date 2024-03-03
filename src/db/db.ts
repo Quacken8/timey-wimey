@@ -8,6 +8,7 @@ import { between } from "drizzle-orm";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import path from "path";
 import * as vscode from "vscode";
+import { minutesToString } from "../ui/parseToString";
 
 export const doMigrate = (pathToDB: string, pathToMigrations: string) => {
   const betterSqlite = new Database(pathToDB);
@@ -73,9 +74,21 @@ export async function getTodaysWorkFromDB(
   const startOfToday = now.startOf("day");
   const selectResult = await getFromDB(db, startOfToday, now);
   const total = selectResult.reduce(
-    (acc, row) => acc + row.interval_minutes,
+    (acc, row) => acc + (row.working ? row.interval_minutes : 0),
     0
   );
 
-  return `${Math.floor(total / 60)}h ${(total % 60).toFixed(0)}m`;
+  return minutesToString(total);
 }
+
+export const reduceToPerRepo = (rows: DBRowSelect[]) =>
+  rows.reduce((acc, row) => {
+    const key = row.workspace ?? "no workspace";
+    const workingMinutes = row.working ? row.interval_minutes : 0;
+    if (acc[key]) {
+      acc[key] += workingMinutes;
+    } else {
+      acc[key] = workingMinutes;
+    }
+    return acc;
+  }, {} as Record<string, number>);

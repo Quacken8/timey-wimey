@@ -1,8 +1,15 @@
 import * as vscode from "vscode";
 import { subscribe } from "../utils";
 import { StatusBarUpdater } from "../timer";
-import { getDB, getTodaysWorkFromDB } from "../db/db";
-import path from "path";
+import {
+  getDB,
+  getFromDB,
+  getTodaysWorkFromDB,
+  reduceToPerRepo,
+} from "../db/db";
+import dayjs from "dayjs";
+import { showInFile } from "./showInFile";
+import { parseToString } from "./parseToString";
 
 export const subscribeStatusBar = async (
   updater: StatusBarUpdater,
@@ -14,7 +21,7 @@ export const subscribeStatusBar = async (
   );
   statusBarItem.text = "0h 0m";
   statusBarItem.tooltip = "Today's working time";
-  //statusBarItem.command = "timeyBoogaloo.showTimey"; // FIXME add the frontend
+  statusBarItem.command = "timeyWimey.showStats";
   statusBarItem.show();
 
   subscribe(statusBarItem, context);
@@ -25,4 +32,24 @@ export const subscribeStatusBar = async (
   if (started !== "started") {
     console.error("StatusBarUpdater failed to start", started);
   }
+
+  subscribe(
+    vscode.commands.registerCommand(statusBarItem.command, async () => {
+      const thisWeek = reduceToPerRepo(
+        await getFromDB(db, dayjs().startOf("week"), dayjs())
+      );
+      const thisMonth = reduceToPerRepo(
+        await getFromDB(db, dayjs().startOf("month"), dayjs())
+      );
+      const lastMonth = reduceToPerRepo(
+        await getFromDB(
+          db,
+          dayjs().startOf("month").subtract(1, "month"),
+          dayjs().startOf("month")
+        )
+      );
+      showInFile(parseToString(thisWeek, thisMonth, lastMonth));
+    }),
+    context
+  );
 };

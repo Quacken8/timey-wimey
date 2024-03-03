@@ -1,8 +1,17 @@
 {
-  "name": "timeyboogaloo",
-  "displayName": "TimeyBoogaloo",
-  "description": "Actually good coding time tracker",
-  "version": "0.0.1",
+  "name": "timey-wimey-tracker",
+  "displayName": "Timey Wimey",
+  "description": "Extension that keeps track of time spent coding per user per project",
+  "icon": "assets/clock-melting.png",
+  "publisher": "Quacken",
+  "version": "0.2.0",
+  "keywords": [
+    "simple",
+    "free",
+    "time",
+    "tracker",
+    "vscode"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -14,21 +23,29 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "timeyWimey.helloWorld",
+          "when": "view == timeyWimey"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "timeyboogaloo.helloWorld",
+        "command": "timeyWimey.helloWorld",
         "title": "Hello World"
       }
     ],
     "configuration": {
-      "title": "TimeyBoogaloo",
+      "title": "Timey Wimey",
       "properties": {
-        "timeyboogaloo.moveDBOnFileChange": {
+        "timeyWimey.moveDBOnFileChange": {
           "type": "boolean",
           "default": true,
           "description": "Move data from the old database to the new one when the database file changes"
         },
-        "timeyboogaloo.writeInterval": {
+        "timeyWimey.writeInterval": {
           "type": "number",
           "default": 5,
           "description": "Interval in minutes to write to the database"
@@ -64,6 +81,7 @@
     "dayjs": "^1.11.10",
     "drizzle-orm": "^0.29.3",
     "gitlog": "^4.0.8",
+    "isoWeek": "link:dayjs/plugin/isoWeek",
     "libchartium": "^0.0.31",
     "sqlocal": "^0.7.1",
     "ts-pattern": "^5.0.8",
