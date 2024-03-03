@@ -19,6 +19,7 @@ export const entries = sqliteTable("entries", {
 export const tableCols = getTableColumns(entries);
 
 export type DBRowInsert = Omit<typeof entries.$inferInsert, "id">;
+export type DBRowSelect = typeof entries.$inferSelect;
 
 export function parseForDB(row: CheckerOutput[]): DBRowInsert {
   let parsedRow: Partial<DBRowInsert> = {};

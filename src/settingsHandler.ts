@@ -7,15 +7,24 @@ import * as fs from "fs";
 import path from "path";
 import { Checker, CheckerSetuper } from "./types";
 
-let oldDbFile: string | undefined;
+let oldDbFilePath: string | undefined;
+export function getDBFolderPath(context: vscode.ExtensionContext) {
+  const dbFolder = path.join(context.extensionPath, "db");
+
+  return dbFolder;
+}
+export function getInterval() {
+  const settings = vscode.workspace.getConfiguration("timeyboogaloo");
+  return (settings.get<number>("writeInterval")! * 60 * 1000) / 60; //FIXME for debug reasons
+}
+
 export function setTimerSettingsAndSubscribe(
   repeatingSaver: RepeatingSaver,
   context: vscode.ExtensionContext
 ) {
   const settings = vscode.workspace.getConfiguration("timeyboogaloo");
   const onSettingsChanged = async () => {
-    repeatingSaver.interval =
-      (settings.get<number>("writeInterval")! * 60 * 1000) / 60; //FIXME for debug reasons
+    repeatingSaver.interval = getInterval();
 
     // FIXME implement custom checker; also do we want the user to deselect default checkers?
     const customChecker: Checker = async () => {
@@ -32,31 +41,19 @@ export function setTimerSettingsAndSubscribe(
       customChecker,
     ];
 
-    const dbFolder = settings.get<string>("databasePath")!;
-    // FIXME implement name of db (possibly named after the user?)
-    const dbName = "timey.db";
-    let dbFile;
-    try {
-      path.parse(dbFolder);
-      dbFile = path.join(dbFolder, dbName);
-    } catch (err) {
-      if (err instanceof TypeError) {
-        // FIXME apply default
-        vscode.window.showErrorMessage(
-          `${dbFolder} is not a valid folder path. Using old path instead.`
-        );
-        throw err;
-      } else {
-        throw err;
-      }
-    }
+    const dbFolderPath = getDBFolderPath(context);
+    console.log(`DB folder path: ${dbFolderPath}`);
     const moveOldDB = settings.get<boolean>("moveDBOnFileChange")!;
-    if (moveOldDB && oldDbFile && oldDbFile !== dbFile) {
-      await fs.promises.rename(oldDbFile, dbFile);
+    if (moveOldDB && oldDbFilePath && oldDbFilePath !== dbFolderPath) {
+      await fs.promises.rename(oldDbFilePath, dbFolderPath);
     }
-    console.log(dbFile);
-    const db = await getDB(dbFile);
-    oldDbFile = dbFile;
+    const dbFilename = "db.sqlite"; // FIXME get this from settings
+    const db = await getDB(
+      dbFolderPath,
+      dbFilename,
+      path.join(context.extensionPath, ".drizzle/migrations")
+    );
+    oldDbFilePath = dbFolderPath;
     repeatingSaver.insertToDB = (row) => insertToDB(db, row);
 
     const weGoin = repeatingSaver.startTimer();

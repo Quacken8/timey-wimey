@@ -23,11 +23,6 @@
     "configuration": {
       "title": "TimeyBoogaloo",
       "properties": {
-        "timeyboogaloo.databasePath": {
-          "type": "string",
-          "default": ".vscode/extensions/timeyBoogaloo/db",
-          "description": "Path to the database folder"
-        },
         "timeyboogaloo.moveDBOnFileChange": {
           "type": "boolean",
           "default": true,

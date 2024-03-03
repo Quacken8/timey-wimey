@@ -1,4 +1,6 @@
+import dayjs from "dayjs";
 import { Checker, CheckerOutput } from "./types";
+import * as vscode from "vscode";
 
 interface Readable<T> {
   get(): T;
@@ -123,6 +125,46 @@ export class RepeatingSaver {
           }),
           ...this.checkers.map((checker) => checker()),
         ]);
+      },
+    });
+    this.timer.start();
+    return "started";
+  }
+
+  dispose() {
+    this.timer?.dispose();
+  }
+}
+
+export class StatusBarUpdater {
+  interval = 1 * 60 * 1000; // FIXME think about the best interval; probably the same as the repeating saver? Or interpolate the data somehow?
+  timer?: Timer;
+  statusBarItem?: vscode.StatusBarItem;
+  getTodaysWorkFromDB?: () => Promise<string>;
+
+  constructor() {}
+
+  startTimer():
+    | "started"
+    | { missing: "statusBarItem" | "interval" | "getTodaysWorkFromDB" } {
+    if (this.statusBarItem === undefined) {
+      return { missing: "statusBarItem" };
+    }
+    if (this.interval === undefined) {
+      return { missing: "interval" };
+    }
+    if (this.getTodaysWorkFromDB === undefined) {
+      return { missing: "getTodaysWorkFromDB" };
+    }
+
+    this.timer = new Timer({
+      interval: this.interval,
+      repeating: true,
+      callback: async () => {
+        if (this.statusBarItem)
+          this.statusBarItem.text = `${await (
+            this.getTodaysWorkFromDB ?? (() => "getTodaysWorkFromDB undefined!")
+          )()}`;
       },
     });
     this.timer.start();
