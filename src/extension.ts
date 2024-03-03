@@ -8,11 +8,11 @@ import { subscribeStatusBar } from "./ui/statusBar";
 
 const repeatingSaver = new RepeatingSaver();
 const statusBarUpdater = new StatusBarUpdater();
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   console.log("Yo waddup");
   setTimerSettingsAndSubscribe(repeatingSaver, context);
   // set up toolbar ui updatators and such
-  subscribeStatusBar(statusBarUpdater, context);
+  await subscribeStatusBar(statusBarUpdater, context);
 }
 
 export function deactivate() {

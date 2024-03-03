@@ -1,8 +1,10 @@
 import * as vscode from "vscode";
 import { subscribe } from "../utils";
 import { StatusBarUpdater } from "../timer";
+import { getDB, getTodaysWorkFromDB } from "../db/db";
+import path from "path";
 
-export const subscribeStatusBar = (
+export const subscribeStatusBar = async (
   updater: StatusBarUpdater,
   context: vscode.ExtensionContext
 ) => {
@@ -16,9 +18,10 @@ export const subscribeStatusBar = (
   statusBarItem.show();
 
   subscribe(statusBarItem, context);
-
+  const db = await getDB(context);
   updater.statusBarItem = statusBarItem;
-  const started = updater.startTimer();
+  updater.getTodaysWorkFromDB = () => getTodaysWorkFromDB(db);
+  const started = await updater.startTimer();
   if (started !== "started") {
     console.error("StatusBarUpdater failed to start", started);
   }

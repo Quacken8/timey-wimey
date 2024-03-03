@@ -137,16 +137,17 @@ export class RepeatingSaver {
 }
 
 export class StatusBarUpdater {
-  interval = 1 * 60 * 1000; // FIXME think about the best interval; probably the same as the repeating saver? Or interpolate the data somehow?
+  interval = 5 * 1000; // FIXME think about the best interval; probably the same as the repeating saver? Or interpolate the data somehow?
   timer?: Timer;
   statusBarItem?: vscode.StatusBarItem;
   getTodaysWorkFromDB?: () => Promise<string>;
 
   constructor() {}
 
-  startTimer():
+  async startTimer(): Promise<
     | "started"
-    | { missing: "statusBarItem" | "interval" | "getTodaysWorkFromDB" } {
+    | { missing: "statusBarItem" | "interval" | "getTodaysWorkFromDB" }
+  > {
     if (this.statusBarItem === undefined) {
       return { missing: "statusBarItem" };
     }
@@ -157,17 +158,20 @@ export class StatusBarUpdater {
       return { missing: "getTodaysWorkFromDB" };
     }
 
+    const updateText = async () => {
+      if (this.statusBarItem)
+        this.statusBarItem.text = `${await (
+          this.getTodaysWorkFromDB ?? (() => "getTodaysWorkFromDB undefined!")
+        )()}`;
+    };
+
     this.timer = new Timer({
       interval: this.interval,
       repeating: true,
-      callback: async () => {
-        if (this.statusBarItem)
-          this.statusBarItem.text = `${await (
-            this.getTodaysWorkFromDB ?? (() => "getTodaysWorkFromDB undefined!")
-          )()}`;
-      },
+      callback: updateText,
     });
     this.timer.start();
+    updateText();
     return "started";
   }
 
