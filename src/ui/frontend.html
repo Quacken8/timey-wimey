@@ -1,22 +1,24 @@
 <script>
   setTimeout(() => {
-    document.getElementById("to").value = new Date()
-      .toISOString()
-      .split(":")
-      .slice(0, 2)
-      .join(":");
+    document.getElementById("to").value = formatDate(new Date());
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
-    document.getElementById("from").value = lastMonth
-      .toISOString()
-      .split(":")
-      .slice(0, 2)
-      .join(":");
+    document.getElementById("from").value = formatDate(lastMonth);
   }, 0);
 
   const vscode = acquireVsCodeApi();
   let workspaces = [];
   let fullData = [];
+
+  //YYYY-MM-DDThh:mm
+  function formatDate(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(date.getDate()).padStart(2, "0")}T${String(
+      date.getHours()
+    ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
 
   function askForRepos() {
     vscode.postMessage({ type: "workspaces" }, "*");
@@ -110,11 +112,11 @@
     <div class="date-range">
       <div>
         from:
-        <input type="datetime-local" id="from" onchange="updateDateRange()" />
+        <input type="datetime-local" id="from" />
       </div>
       <div>
         to:
-        <input type="datetime-local" id="to" onchange="updateDateRange()" />
+        <input type="datetime-local" id="to" />
       </div>
     </div>
     <h2>workspaces</h2>
@@ -127,7 +129,7 @@
   <style>
     .container {
       display: grid;
-      grid-template-columns: [main] 5fr [sidebar] 1fr;
+      grid-template-columns: [main] 2fr [sidebar] 1fr;
       grid-gap: 10px;
     }
 
