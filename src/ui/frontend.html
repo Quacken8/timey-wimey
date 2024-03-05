@@ -1,9 +1,11 @@
 <script>
+  document.addEventListener("change", askForData); // reactivity lmao
   setTimeout(() => {
     document.getElementById("to").value = formatDate(new Date());
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     document.getElementById("from").value = formatDate(lastMonth);
+    askForData();
   }, 0);
 
   const vscode = acquireVsCodeApi();
