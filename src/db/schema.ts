@@ -3,7 +3,6 @@ import { CheckerOutput } from "../types";
 import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { getTableColumns } from "drizzle-orm";
 
-// FIXME implement name of db (possibly named after the user?)
 export const entries = sqliteTable("entries", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   timestamp: integer("date", { mode: "timestamp" }).notNull(),

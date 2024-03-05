@@ -137,7 +137,7 @@ export class RepeatingSaver {
 }
 
 export class StatusBarUpdater {
-  interval = 5 * 1000; // FIXME think about the best interval; probably the same as the repeating saver? Or interpolate the data somehow?
+  interval = 1 * 1000;
   timer?: Timer;
   statusBarItem?: vscode.StatusBarItem;
   getTodaysWorkFromDB?: () => Promise<string>;

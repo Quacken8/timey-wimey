@@ -10,7 +10,7 @@ let oldDbFilePath: string | undefined;
 
 export function getInterval() {
   const settings = vscode.workspace.getConfiguration("timeyWimey");
-  return (settings.get<number>("writeInterval")! * 60 * 1000) / 60; //FIXME for debug reasons
+  return settings.get<number>("writeInterval")! * 60 * 1000;
 }
 
 export function setTimerSettingsAndSubscribe(

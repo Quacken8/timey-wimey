@@ -1,0 +1,169 @@
+<script>
+  setTimeout(() => {
+    document.getElementById("to").value = new Date()
+      .toISOString()
+      .split(":")
+      .slice(0, 2)
+      .join(":");
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    document.getElementById("from").value = lastMonth
+      .toISOString()
+      .split(":")
+      .slice(0, 2)
+      .join(":");
+  }, 0);
+
+  const vscode = acquireVsCodeApi();
+  let workspaces = [];
+  let fullData = [];
+
+  function askForRepos() {
+    vscode.postMessage({ type: "workspaces" }, "*");
+  }
+
+  function askForData() {
+    const from = new Date(document.getElementById("from").value);
+    const to = new Date(document.getElementById("to").value);
+    vscode.postMessage(
+      {
+        type: "fullData",
+        from,
+        to,
+        workspaces: workspaces
+          .filter((space) => space.selected)
+          .map((space) => space.name),
+      },
+      "*"
+    );
+  }
+
+  window.addEventListener("message", (event) => {
+    switch (event.data.type) {
+      case "workspaces": {
+        workspaces = event.data.content.map((datapoint) => {
+          return { name: datapoint, selected: true };
+        });
+        putReposInSidebar();
+      }
+      case "fullData": {
+        fullData = event.data.content;
+        putFullDataInMain();
+      }
+    }
+  });
+
+  function putReposInSidebar() {
+    // workspaces: {name: string, selected: boolean}[]
+    const divs = workspaces.map((repo) => {
+      const div = document.createElement("div");
+      div.className = "repo";
+      const repoName = document.createElement("div");
+      repoName.innerText = repo.name;
+      div.appendChild(repoName);
+      const selectionButton = document.createElement("input");
+      selectionButton.type = "checkbox";
+      selectionButton.checked = repo.selected;
+      selectionButton.addEventListener("change", () => {
+        repo.selected = selectionButton.checked;
+      });
+      div.appendChild(selectionButton);
+      return div;
+    });
+    const sidebar = document.getElementById("sidebar");
+    sidebar.innerHTML = "";
+    divs.forEach((div) => {
+      sidebar.appendChild(div);
+    });
+  }
+
+  function putFullDataInMain() {
+    const structuredData = fullData.reduce(
+      (acc, curr) => {
+        // curr: { timestamp: Date, working: bool, window_focused: bool, workspace: string }
+        acc.working += curr.working ? curr.interval_minutes : 0;
+        acc.focused += curr.window_focused ? curr.interval_minutes : 0;
+        return acc;
+      },
+      { working: 0, focused: 0 }
+    );
+    const minutesToString = (minutes) =>
+      `${Math.floor(minutes / 60)}h ${(minutes % 60).toFixed(0)}m`;
+    const data = document.getElementById("data");
+    data.innerHTML = `
+      <div>Working: ${minutesToString(structuredData.working)}</div>
+      <div>Focused: ${minutesToString(structuredData.focused)}</div>
+    `;
+  }
+
+  askForRepos();
+</script>
+<h1 id="h1">Timey Wimey stats!</h1>
+<div class="container">
+  <div class="main-container">
+    <button id="get-workspaces" onclick="askForData()">Get data</button>
+    <div id="data"></div>
+  </div>
+
+  <div class="sidebar-container">
+    <h2>Date range</h2>
+    <div class="date-range">
+      <div>
+        from:
+        <input type="datetime-local" id="from" onchange="updateDateRange()" />
+      </div>
+      <div>
+        to:
+        <input type="datetime-local" id="to" onchange="updateDateRange()" />
+      </div>
+    </div>
+    <h2>workspaces</h2>
+    <div id="sidebar">
+      <div>first repo</div>
+      <div>second repo</div>
+    </div>
+  </div>
+
+  <style>
+    .container {
+      display: grid;
+      grid-template-columns: [main] 5fr [sidebar] 1fr;
+      grid-gap: 10px;
+    }
+
+    #sidebar {
+      grid-column: sidebar;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-container {
+      grid-column: main;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .repo {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+    }
+
+    .date-range {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .date-range div {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+    }
+
+    button {
+      width: fit-content;
+      padding: 0 5px;
+      margin-bottom: 10px;
+    }
+  </style>
+</div>

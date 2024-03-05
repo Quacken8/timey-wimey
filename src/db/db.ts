@@ -4,11 +4,13 @@ import { CheckerOutput, PromiseType } from "../types";
 import { DBRowSelect, entries, parseForDB } from "./schema";
 import * as fs from "fs";
 import dayjs from "dayjs";
-import { between } from "drizzle-orm";
+import { between, and, inArray } from "drizzle-orm";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import path from "path";
 import * as vscode from "vscode";
 import { minutesToString } from "../ui/parseToString";
+
+export type DB = PromiseType<ReturnType<typeof getDB>>;
 
 export const doMigrate = (pathToDB: string, pathToMigrations: string) => {
   const betterSqlite = new Database(pathToDB);
@@ -16,60 +18,61 @@ export const doMigrate = (pathToDB: string, pathToMigrations: string) => {
   migrate(db, { migrationsFolder: pathToMigrations });
 
   betterSqlite.close();
-  console.log("closed");
 };
 
 export const getDBFolderPath = (context: vscode.ExtensionContext) =>
   path.join(context.extensionPath, "db");
 
+export const getDBFilePath = (context: vscode.ExtensionContext) =>
+  path.join(getDBFolderPath(context), "db.sqlite"); // FIXME get this from settings?
+
 export async function getDB(context: vscode.ExtensionContext) {
   const folderPath = getDBFolderPath(context);
 
-  console.log(`DB folder path: ${folderPath}`);
-  const dbFilename = "db.sqlite"; // FIXME get this from settings?
   const migrationsFolder = path.join(
     context.extensionPath,
     ".drizzle/migrations"
   );
-  console.log("ensuring folder");
   await fs.promises.mkdir(folderPath, {
     recursive: true,
   });
-  const filePath = path.join(folderPath, dbFilename);
-  console.log("migrating");
-  console.log(migrationsFolder);
+  const filePath = getDBFilePath(context);
   doMigrate(filePath, migrationsFolder);
-  console.log("getting the db itself");
   const betterSqlite = new Database(filePath);
   const db = drizzle(betterSqlite);
   return db;
 }
 
-export const insertToDB = async (
-  db: PromiseType<ReturnType<typeof getDB>>,
-  row: Promise<CheckerOutput>[]
-) => {
+export const insertToDB = async (db: DB, row: Promise<CheckerOutput>[]) => {
   const resolved = parseForDB(await Promise.all(row));
   const insertResult = db.insert(entries).values(resolved).run();
-  console.log(insertResult);
 };
 
 export async function getFromDB(
-  db: PromiseType<ReturnType<typeof getDB>>,
+  db: DB,
   from: dayjs.Dayjs,
-  to: dayjs.Dayjs
+  to: dayjs.Dayjs,
+  workspaces?: string[]
 ): Promise<DBRowSelect[]> {
-  const selectResult = db
-    .select()
-    .from(entries)
-    .where(between(entries.timestamp, from.toDate(), to.toDate()));
-
-  return selectResult;
+  if (workspaces !== undefined) {
+    return db
+      .select()
+      .from(entries)
+      .where(
+        and(
+          between(entries.timestamp, from.toDate(), to.toDate()),
+          inArray(entries.workspace, workspaces)
+        )
+      );
+  } else {
+    return db
+      .select()
+      .from(entries)
+      .where(between(entries.timestamp, from.toDate(), to.toDate()));
+  }
 }
 
-export async function getTodaysWorkFromDB(
-  db: PromiseType<ReturnType<typeof getDB>>
-): Promise<string> {
+export async function getTodaysWorkFromDB(db: DB): Promise<string> {
   const now = dayjs();
   const startOfToday = now.startOf("day");
   const selectResult = await getFromDB(db, startOfToday, now);
@@ -92,3 +95,13 @@ export const reduceToPerRepo = (rows: DBRowSelect[]) =>
     }
     return acc;
   }, {} as Record<string, number>);
+
+export async function getReposFromDB(db: DB) {
+  return (
+    await db.selectDistinct({ repo: entries.workspace }).from(entries)
+  ).map((row) => row.repo);
+}
+
+// export function getDateRangeFromDB(db:DB): DateRange {
+
+// }
