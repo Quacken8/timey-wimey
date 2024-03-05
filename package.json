@@ -58,18 +58,14 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "vscode:prepublish": "pnpm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && pnpm run lint",
+    "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "rebuild-sqlite": "npm run electron-rebuild -f -w better-sqlite3 -v 27.2.3",
-    "migrate": "tsx .drizzle/migrator.ts",
-    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
-    "esbuild": "npm run esbuild-base -- --sourcemap",
-    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
-    "test-compile": "tsc -p ./"
+    "rebuild-sqlite": "pnpm electron-rebuild -f -w better-sqlite3 -v 27.2.3",
+    "migrate": "tsx .drizzle/migrator.ts"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.6.0",
