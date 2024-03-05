@@ -6,3 +6,4 @@ node_modules
 
 .vscode/timeyWimey
 /db/
+*.sqlite

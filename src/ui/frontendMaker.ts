@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import * as fs from "fs";
 import { registerApiReplies } from "./backend";
 import path from "path";
 
@@ -19,8 +18,8 @@ async function getWebviewContent(context: vscode.ExtensionContext) {
   const pathToHtml = vscode.Uri.file(
     path.join(context.extensionPath, "src", "ui", "frontend.html")
   );
-
-  const pathUri = pathToHtml.with({ scheme: "vscode-resource" });
-  const html = await fs.promises.readFile(pathUri.fsPath, "utf-8");
+  const html = new TextDecoder().decode(
+    await vscode.workspace.fs.readFile(pathToHtml)
+  );
   return html;
 }

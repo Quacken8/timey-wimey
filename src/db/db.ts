@@ -2,7 +2,6 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { CheckerOutput, PromiseType } from "../types";
 import { DBRowSelect, entries, parseForDB } from "./schema";
-import * as fs from "fs";
 import dayjs from "dayjs";
 import { between, and, inArray } from "drizzle-orm";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
@@ -21,7 +20,7 @@ export const doMigrate = (pathToDB: string, pathToMigrations: string) => {
 };
 
 export const getDBFolderPath = (context: vscode.ExtensionContext) =>
-  path.join(context.extensionPath, "db");
+  vscode.Uri.joinPath(context.globalStorageUri, "db").fsPath;
 
 export const getDBFilePath = (context: vscode.ExtensionContext) =>
   path.join(getDBFolderPath(context), "db.sqlite"); // FIXME get this from settings?
@@ -33,9 +32,7 @@ export async function getDB(context: vscode.ExtensionContext) {
     context.extensionPath,
     ".drizzle/migrations"
   );
-  await fs.promises.mkdir(folderPath, {
-    recursive: true,
-  });
+  await vscode.workspace.fs.createDirectory(vscode.Uri.parse(folderPath));
   const filePath = getDBFilePath(context);
   doMigrate(filePath, migrationsFolder);
   const betterSqlite = new Database(filePath);
