@@ -45,7 +45,8 @@ export async function getDB(context: vscode.ExtensionContext) {
 
 export const insertToDB = async (db: DB, row: Promise<CheckerOutput>[]) => {
   const resolved = parseForDB(await Promise.all(row));
-  const insertResult = db.insert(entries).values(resolved).run();
+  if (resolved.working || resolved.window_focused)
+    db.insert(entries).values(resolved).run();
 };
 
 export async function getFromDB(
