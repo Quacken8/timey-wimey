@@ -53,6 +53,9 @@ export async function getFromDB(
   workspaces?: string[]
 ): Promise<DBRowSelect[]> {
   if (workspaces !== undefined) {
+    if (workspaces.length === 0) {
+      return Promise.resolve([]);
+    }
     return db
       .select()
       .from(entries)
