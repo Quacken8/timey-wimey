@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { subscribe } from "../utils";
 import { StatusBarUpdater } from "../timer";
-import { getDB, getDBFilePath, getTodaysWorkFromDB } from "../db/db";
+import { getDB } from "../db/db";
 import { webviewCallback } from "./frontendMaker";
 
 export const subscribeStatusBar = async (
@@ -13,7 +13,7 @@ export const subscribeStatusBar = async (
     vscode.StatusBarAlignment.Right,
     100
   );
-  statusBarItem.text = await getTodaysWorkFromDB(db);
+  statusBarItem.text = await db.getTodaysWork();
   statusBarItem.tooltip = "Today's working time";
   // statusBarItem.command = "timeyWimey.showStats";
   statusBarItem.command = "timeyWimey.openWebView";
@@ -21,7 +21,7 @@ export const subscribeStatusBar = async (
 
   subscribe(statusBarItem, context);
   updater.statusBarItem = statusBarItem;
-  updater.getTodaysWorkFromDB = () => getTodaysWorkFromDB(db);
+  updater.getTodaysWorkFromDB = () => db.getTodaysWork();
   const started = await updater.startTimer();
   if (started !== "started") {
     console.error("StatusBarUpdater failed to start", started);
@@ -49,8 +49,8 @@ export const subscribeStatusBar = async (
 
   subscribe(
     vscode.commands.registerCommand("timeyWimey.openDB", () => {
-      const dbFolderPath = vscode.Uri.file(getDBFilePath(context));
-      vscode.commands.executeCommand("vscode.open", dbFolderPath);
+      const filePath = vscode.Uri.file(db.getFilePath(context));
+      vscode.commands.executeCommand("vscode.open", filePath);
     }),
     context
   );

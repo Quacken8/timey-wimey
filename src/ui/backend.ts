@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { DBRowSelect } from "../db/schema";
-import { DB, getDB, getFromDB, getReposFromDB } from "../db/db";
+import { getDB } from "../db/db";
 import dayjs from "dayjs";
 import { match } from "ts-pattern";
 
@@ -35,37 +35,19 @@ export function registerApiReplies(
     match(message.type)
       .with("fullData", async () => {
         const { workspaces, from, to } = message as any;
-        sendToWebview(await getFullData(from, to, workspaces, db));
+        sendToWebview({
+          type: "fullData",
+          content: await db.getRows(from, to, workspaces),
+        });
       })
       .with("workspaces", async () => {
-        sendToWebview(await getRepos(db));
+        sendToWebview({
+          type: "workspaces",
+          content: (await db.getWorkspaces()).map((w) =>
+            w === null ? "no workspace" : w
+          ),
+        });
       })
       .exhaustive();
   });
-}
-
-async function getFullData(
-  from: Date,
-  to: Date,
-  workspaces: string[],
-  db: DB
-): Promise<Answer> {
-  return {
-    content: await getFromDB(db, dayjs(from), dayjs(to), workspaces),
-    type: "fullData",
-  };
-}
-
-// async function getPossibleRange(db: DB): Promise<DateRange> {
-//   return getDateRangeFromDB(db);
-// }
-
-async function getRepos(db: DB): Promise<Answer> {
-  const workspaces = (await getReposFromDB(db)).map((repo) =>
-    repo === null ? "no workspace" : repo
-  );
-  return {
-    content: workspaces,
-    type: "workspaces",
-  };
 }
