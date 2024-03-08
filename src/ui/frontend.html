@@ -1,16 +1,24 @@
 <script>
   document.addEventListener("change", askForData); // reactivity lmao
-  setTimeout(() => {
+  setTimeout(async () => {
     document.getElementById("to").value = formatDate(new Date());
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     document.getElementById("from").value = formatDate(lastMonth);
-    askForData();
+    await askForRepos().then((event) => {
+      workspaces = event.content.map((datapoint) => {
+        return { name: datapoint, selected: true };
+      });
+      putReposInSidebar();
+    });
+
+    askForData().then((event) => {
+      putFullDataInMain(event.content);
+    });
   }, 0);
 
   const vscode = acquireVsCodeApi();
   let workspaces = [];
-  let fullData = [];
 
   //YYYY-MM-DDThh:mm
   function formatDate(date) {
@@ -23,39 +31,45 @@
   }
 
   function askForRepos() {
-    vscode.postMessage({ type: "workspaces" }, "*");
+    return new Promise((resolve) => {
+      function messageHandler(event) {
+        if (event.data.type === "workspaces") {
+          window.removeEventListener("message", messageHandler);
+          resolve(event.data);
+        }
+      }
+
+      window.addEventListener("message", messageHandler);
+      vscode.postMessage({ type: "workspaces" }, "*");
+    });
   }
 
   function askForData() {
-    const from = new Date(document.getElementById("from").value);
-    const to = new Date(document.getElementById("to").value);
-    vscode.postMessage(
-      {
-        type: "fullData",
-        from,
-        to,
-        workspaces: workspaces
-          .filter((space) => space.selected)
-          .map((space) => space.name),
-      },
-      "*"
-    );
-  }
+    return new Promise((resolve) => {
+      function messageHandler(event) {
+        if (event.data.type === "fullData") {
+          window.removeEventListener("message", messageHandler);
+          resolve(event.data);
+        }
+      }
 
-  window.addEventListener("message", (event) => {
-    switch (event.data.type) {
-      case "workspaces": {
-        workspaces = event.data.content.map((datapoint) => {
-          return { name: datapoint, selected: true };
-        });
-        putReposInSidebar();
-      }
-      case "fullData": {
-        fullData = event.data.content;
-        putFullDataInMain();
-      }
-    }
-  });
+      window.addEventListener("message", messageHandler);
+
+      const from = new Date(document.getElementById("from").value);
+      const to = new Date(document.getElementById("to").value);
+      vscode.postMessage(
+        {
+          type: "fullData",
+          from,
+          to,
+          workspaces: workspaces
+            .filter((space) => space.selected)
+            .map((space) => space.name),
+        },
+        "*"
+      );
+    });
+  }
 
   function putReposInSidebar() {
     // workspaces: {name: string, selected: boolean}[]
@@ -81,7 +95,7 @@
     });
   }
 
-  function putFullDataInMain() {
+  function putFullDataInMain(fullData) {
     const structuredData = fullData.reduce(
       (acc, curr) => {
         // curr: { timestamp: Date, working: bool, window_focused: bool, workspace: string }
@@ -99,8 +113,6 @@
       <div>Focused: ${minutesToString(structuredData.focused)}</div>
     `;
   }
-
-  askForRepos();
 </script>
 <h1 id="h1">Timey Wimey stats!</h1>
 <div class="container">

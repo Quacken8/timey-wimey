@@ -9,80 +9,115 @@ import path from "path";
 import * as vscode from "vscode";
 import { minutesToString } from "../ui/parseToString";
 
-export type DB = PromiseType<ReturnType<typeof getDB>>;
+export abstract class DB {
+  constructor(context: vscode.ExtensionContext) {}
 
-export const doMigrate = (pathToDB: string, pathToMigrations: string) => {
-  const betterSqlite = new Database(pathToDB);
-  const db = drizzle(betterSqlite);
-  migrate(db, { migrationsFolder: pathToMigrations });
-
-  betterSqlite.close();
-};
-
-export const getDBFolderPath = (context: vscode.ExtensionContext) =>
-  vscode.Uri.joinPath(context.globalStorageUri, "db").fsPath;
-
-export const getDBFilePath = (context: vscode.ExtensionContext) =>
-  path.join(getDBFolderPath(context), "db.sqlite"); // FIXME get this from settings?
-
-export async function getDB(context: vscode.ExtensionContext) {
-  const folderPath = getDBFolderPath(context);
-
-  const migrationsFolder = path.join(
-    context.extensionPath,
-    ".drizzle/migrations"
-  );
-  await vscode.workspace.fs.createDirectory(vscode.Uri.parse(folderPath));
-  const filePath = getDBFilePath(context);
-  doMigrate(filePath, migrationsFolder);
-  const betterSqlite = new Database(filePath);
-  const db = drizzle(betterSqlite);
-  return db;
+  abstract getFolderPath(): string;
+  abstract getFilePath(): string;
+  abstract insert(row: Promise<CheckerOutput>[]): Promise<void>;
+  abstract getRows(
+    from: dayjs.Dayjs,
+    to: dayjs.Dayjs,
+    workspaces?: string[]
+  ): Promise<DBRowSelect[]>;
+  abstract getTodaysWork(): Promise<string>;
+  abstract getWorkspaces(): Promise<string[]>;
+  abstract doMigrate(pathToMigrations: string): void;
 }
 
-export const insertToDB = async (db: DB, row: Promise<CheckerOutput>[]) => {
-  const resolved = parseForDB(await Promise.all(row));
-  if (resolved.working || resolved.window_focused)
-    db.insert(entries).values(resolved).run();
-};
+export class DefaultDB extends DB {
+  #db: ReturnType<typeof drizzle>;
+  #context: vscode.ExtensionContext;
 
-export async function getFromDB(
-  db: DB,
-  from: dayjs.Dayjs,
-  to: dayjs.Dayjs,
-  workspaces?: string[]
-): Promise<DBRowSelect[]> {
-  if (workspaces !== undefined) {
-    if (workspaces.length === 0) {
-      return Promise.resolve([]);
+  constructor(context: vscode.ExtensionContext) {
+    super(context);
+    this.#context = context;
+    const migrationsFolder = path.join(
+      context.extensionPath,
+      ".drizzle/migrations"
+    );
+    this.doMigrate(migrationsFolder);
+    const filePath = this.getFilePath();
+    const betterSqlite = new Database(filePath);
+    this.#db = drizzle(betterSqlite);
+  }
+
+  doMigrate(pathToMigrations: string) {
+    const pathToDB = this.getFilePath();
+    const betterSqlite = new Database(pathToDB);
+    const db = drizzle(betterSqlite);
+    migrate(db, { migrationsFolder: pathToMigrations });
+
+    betterSqlite.close();
+  }
+
+  getFolderPath() {
+    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db").fsPath;
+  }
+
+  getFilePath() {
+    return path.join(this.getFolderPath(), "db.sqlite"); // FIXME get this from settings?
+  }
+
+  async insert(row: Promise<CheckerOutput>[]) {
+    const resolved = parseForDB(await Promise.all(row));
+    if (resolved.working || resolved.window_focused)
+      this.#db.insert(entries).values(resolved).run();
+  }
+
+  getRows(
+    from: dayjs.Dayjs,
+    to: dayjs.Dayjs,
+    workspaces?: string[]
+  ): Promise<DBRowSelect[]> {
+    if (workspaces !== undefined) {
+      if (workspaces.length === 0) {
+        return Promise.resolve([]);
+      }
+      return this.#db
+        .select()
+        .from(entries)
+        .where(
+          and(
+            between(entries.timestamp, from.toDate(), to.toDate()),
+            inArray(entries.workspace, workspaces)
+          )
+        );
+    } else {
+      return this.#db
+        .select()
+        .from(entries)
+        .where(between(entries.timestamp, from.toDate(), to.toDate()));
     }
-    return db
-      .select()
-      .from(entries)
-      .where(
-        and(
-          between(entries.timestamp, from.toDate(), to.toDate()),
-          inArray(entries.workspace, workspaces)
-        )
-      );
-  } else {
-    return db
-      .select()
-      .from(entries)
-      .where(between(entries.timestamp, from.toDate(), to.toDate()));
+  }
+
+  async getTodaysWork(): Promise<string> {
+    const now = dayjs();
+    const startOfToday = now.startOf("day");
+    const selectResult = await this.getRows(startOfToday, now);
+    const total = selectResult.reduce(
+      (acc, row) => acc + (row.working ? row.interval_minutes : 0),
+      0
+    );
+
+    return minutesToString(total);
+  }
+
+  async getWorkspaces() {
+    return (
+      await this.#db.selectDistinct({ repo: entries.workspace }).from(entries)
+    ).map((row) => (row.repo === null ? "no workspace" : row.repo));
   }
 }
 
-export async function getTodaysWorkFromDB(db: DB): Promise<string> {
-  const now = dayjs();
-  const startOfToday = now.startOf("day");
-  const selectResult = await getFromDB(db, startOfToday, now);
-  const total = selectResult.reduce(
-    (acc, row) => acc + (row.working ? row.interval_minutes : 0),
-    0
-  );
+export function getDB(context: vscode.ExtensionContext): DB {
+  const userProvided = false;
 
-  return minutesToString(total);
+  if (userProvided) {
+    throw new Error("Not implemented");
+  } else {
+    return new DefaultDB(context);
+  }
 }
 
 export const reduceToPerRepo = (rows: DBRowSelect[]) =>
@@ -96,13 +131,3 @@ export const reduceToPerRepo = (rows: DBRowSelect[]) =>
     }
     return acc;
   }, {} as Record<string, number>);
-
-export async function getReposFromDB(db: DB) {
-  return (
-    await db.selectDistinct({ repo: entries.workspace }).from(entries)
-  ).map((row) => row.repo);
-}
-
-// export function getDateRangeFromDB(db:DB): DateRange {
-
-// }

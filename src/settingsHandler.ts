@@ -1,11 +1,9 @@
 import { defaultCheckers } from "./checkers";
-import { insertToDB, getDB, getDBFolderPath } from "./db/db";
+import { getDB } from "./db/db";
 import { RepeatingSaver } from "./timer";
 import * as vscode from "vscode";
 import { subscribe } from "./utils";
 import { Checker } from "./types";
-
-let oldDbFilePath: vscode.Uri | undefined;
 
 export function getInterval() {
   const settings = vscode.workspace.getConfiguration("timeyWimey");
@@ -16,7 +14,6 @@ export function setTimerSettingsAndSubscribe(
   repeatingSaver: RepeatingSaver,
   context: vscode.ExtensionContext
 ) {
-  const settings = vscode.workspace.getConfiguration("timeyWimey");
   const onSettingsChanged = async () => {
     repeatingSaver.interval = getInterval();
 
@@ -35,19 +32,8 @@ export function setTimerSettingsAndSubscribe(
       customChecker,
     ];
 
-    const dbFolderPath = vscode.Uri.parse(getDBFolderPath(context));
-    const moveOldDB = settings.get<boolean>("moveDBOnFileChange")!;
-    if (
-      moveOldDB &&
-      oldDbFilePath &&
-      oldDbFilePath.fsPath !== dbFolderPath.fsPath
-    ) {
-      await vscode.workspace.fs.rename(oldDbFilePath, dbFolderPath);
-    }
-
     const db = await getDB(context);
-    oldDbFilePath = dbFolderPath;
-    repeatingSaver.insertToDB = (row) => insertToDB(db, row);
+    repeatingSaver.insertToDB = (row) => db.insert(row);
 
     const weGoin = repeatingSaver.startTimer();
     if (weGoin !== "started") {
