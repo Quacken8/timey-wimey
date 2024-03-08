@@ -31,13 +31,14 @@ export function registerApiReplies(
     panel.webview.postMessage(message);
   };
   panel.webview.onDidReceiveMessage(async (message: Query) => {
-    const db = await getDB(context);
+    const db = getDB(context);
     match(message.type)
       .with("fullData", async () => {
         const { workspaces, from, to } = message as any;
+        const content = await db.getRows(dayjs(from), dayjs(to), workspaces);
         sendToWebview({
           type: "fullData",
-          content: await db.getRows(from, to, workspaces),
+          content,
         });
       })
       .with("workspaces", async () => {

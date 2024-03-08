@@ -8,7 +8,7 @@ export const subscribeStatusBar = async (
   updater: StatusBarUpdater,
   context: vscode.ExtensionContext
 ) => {
-  const db = await getDB(context);
+  const db = getDB(context);
   const statusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
     100
@@ -27,29 +27,9 @@ export const subscribeStatusBar = async (
     console.error("StatusBarUpdater failed to start", started);
   }
 
-  // subscribe(
-  //   vscode.commands.registerCommand(statusBarItem.command, async () => {
-  //     const thisWeek = reduceToPerRepo(
-  //       await getFromDB(db, dayjs().startOf("week"), dayjs())
-  //     );
-  //     const thisMonth = reduceToPerRepo(
-  //       await getFromDB(db, dayjs().startOf("month"), dayjs())
-  //     );
-  //     const lastMonth = reduceToPerRepo(
-  //       await getFromDB(
-  //         db,
-  //         dayjs().startOf("month").subtract(1, "month"),
-  //         dayjs().startOf("month")
-  //       )
-  //     );
-  //     showInFile(parseToString(thisWeek, thisMonth, lastMonth));
-  //   }),
-  //   context
-  // );
-
   subscribe(
     vscode.commands.registerCommand("timeyWimey.openDB", () => {
-      const filePath = vscode.Uri.file(db.getFilePath(context));
+      const filePath = vscode.Uri.file(db.getFilePath());
       vscode.commands.executeCommand("vscode.open", filePath);
     }),
     context

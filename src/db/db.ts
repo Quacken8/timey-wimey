@@ -9,48 +9,41 @@ import path from "path";
 import * as vscode from "vscode";
 import { minutesToString } from "../ui/parseToString";
 
-export interface DBInstance {
-  getFolderPath(context: vscode.ExtensionContext): string;
-  getFilePath(context: vscode.ExtensionContext): string;
-  insert(row: Promise<CheckerOutput>[]): Promise<void>;
-  getRows(
+export abstract class DB {
+  constructor(context: vscode.ExtensionContext) {}
+
+  abstract getFolderPath(): string;
+  abstract getFilePath(): string;
+  abstract insert(row: Promise<CheckerOutput>[]): Promise<void>;
+  abstract getRows(
     from: dayjs.Dayjs,
     to: dayjs.Dayjs,
     workspaces?: string[]
   ): Promise<DBRowSelect[]>;
-  getTodaysWork(): Promise<string>;
-  getWorkspaces(): Promise<string[]>;
-  doMigrate(context: vscode.ExtensionContext, pathToMigrations: string): void;
+  abstract getTodaysWork(): Promise<string>;
+  abstract getWorkspaces(): Promise<string[]>;
+  abstract doMigrate(pathToMigrations: string): void;
 }
 
-export interface DBConstructor {
-  create(context: vscode.ExtensionContext): Promise<DB>;
-}
+export class DefaultDB extends DB {
+  #db: ReturnType<typeof drizzle>;
+  #context: vscode.ExtensionContext;
 
-export interface DB extends DBInstance {
-  create: DBConstructor;
-}
-export class DefaultDB implements DB {
-  #db?: ReturnType<typeof drizzle>;
-
-  static async create(context: vscode.ExtensionContext) {
-    const instance = new DefaultDB();
-    const folderPath = instance.getFolderPath(context);
-
+  constructor(context: vscode.ExtensionContext) {
+    super(context);
+    this.#context = context;
     const migrationsFolder = path.join(
       context.extensionPath,
       ".drizzle/migrations"
     );
-    await vscode.workspace.fs.createDirectory(vscode.Uri.parse(folderPath));
-    instance.doMigrate(context, migrationsFolder);
-    const filePath = instance.getFilePath(context);
+    this.doMigrate(migrationsFolder);
+    const filePath = this.getFilePath();
     const betterSqlite = new Database(filePath);
-    instance.#db = drizzle(betterSqlite);
-    return instance;
+    this.#db = drizzle(betterSqlite);
   }
 
-  doMigrate(context: vscode.ExtensionContext, pathToMigrations: string) {
-    const pathToDB = this.getFilePath(context);
+  doMigrate(pathToMigrations: string) {
+    const pathToDB = this.getFilePath();
     const betterSqlite = new Database(pathToDB);
     const db = drizzle(betterSqlite);
     migrate(db, { migrationsFolder: pathToMigrations });
@@ -58,18 +51,18 @@ export class DefaultDB implements DB {
     betterSqlite.close();
   }
 
-  getFolderPath(context: vscode.ExtensionContext) {
-    return vscode.Uri.joinPath(context.globalStorageUri, "db").fsPath;
+  getFolderPath() {
+    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db").fsPath;
   }
 
-  getFilePath(context: vscode.ExtensionContext) {
-    return path.join(this.getFolderPath(context), "db.sqlite"); // FIXME get this from settings?
+  getFilePath() {
+    return path.join(this.getFolderPath(), "db.sqlite"); // FIXME get this from settings?
   }
 
   async insert(row: Promise<CheckerOutput>[]) {
     const resolved = parseForDB(await Promise.all(row));
     if (resolved.working || resolved.window_focused)
-      this.#db!.insert(entries).values(resolved).run();
+      this.#db.insert(entries).values(resolved).run();
   }
 
   getRows(
@@ -81,7 +74,8 @@ export class DefaultDB implements DB {
       if (workspaces.length === 0) {
         return Promise.resolve([]);
       }
-      return this.#db!.select()
+      return this.#db
+        .select()
         .from(entries)
         .where(
           and(
@@ -90,7 +84,8 @@ export class DefaultDB implements DB {
           )
         );
     } else {
-      return this.#db!.select()
+      return this.#db
+        .select()
         .from(entries)
         .where(between(entries.timestamp, from.toDate(), to.toDate()));
     }
@@ -110,18 +105,18 @@ export class DefaultDB implements DB {
 
   async getWorkspaces() {
     return (
-      await this.#db!.selectDistinct({ repo: entries.workspace }).from(entries)
+      await this.#db.selectDistinct({ repo: entries.workspace }).from(entries)
     ).map((row) => (row.repo === null ? "no workspace" : row.repo));
   }
 }
 
-export async function getDB(context: vscode.ExtensionContext): Promise<DB> {
+export function getDB(context: vscode.ExtensionContext): DB {
   const userProvided = false;
 
   if (userProvided) {
     throw new Error("Not implemented");
   } else {
-    return DefaultDB.create(context);
+    return new DefaultDB(context);
   }
 }
 
