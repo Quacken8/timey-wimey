@@ -22,7 +22,6 @@ export abstract class DB {
   ): Promise<DBRowSelect[]>;
   abstract getTodaysWork(): Promise<string>;
   abstract getWorkspaces(): Promise<string[]>;
-  abstract doMigrate(pathToMigrations: string): void;
 }
 
 export class DefaultDB extends DB {
