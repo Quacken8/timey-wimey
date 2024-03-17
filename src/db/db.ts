@@ -109,14 +109,60 @@ export class DefaultDB extends DB {
   }
 }
 
+/// used when variable "NODE_ENV" is "development"
+/// all queries are logged to console and no actual database is used
+export class DebuggingDB {
+  #context: vscode.ExtensionContext;
+
+  constructor(context: vscode.ExtensionContext) {
+    this.#context = context;
+  }
+
+  getFolderPath() {
+    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db").fsPath;
+  }
+
+  getFilePath() {
+    return path.join(this.getFolderPath(), "db.sqlite");
+  }
+
+  async insert(row: Promise<CheckerOutput>[]) {
+    console.log("Inserting", await Promise.all(row));
+  }
+
+  getRows(
+    from: dayjs.Dayjs,
+    to: dayjs.Dayjs,
+    workspaces?: string[]
+  ): Promise<DBRowSelect[]> {
+    console.log("Selecting from", from, "to", to, "for", workspaces);
+    return Promise.resolve([]);
+  }
+
+  async getTodaysWork(): Promise<string> {
+    console.log("Getting todays work");
+    return "0m";
+  }
+
+  async getWorkspaces() {
+    console.log("Getting workspaces");
+    return ["no workspace"];
+  }
+}
+
 export function getDB(context: vscode.ExtensionContext): DB {
   const userProvided = false;
 
+  const development = process.env.NODE_ENV === "development";
+  if (development) {
+    return new DebuggingDB(context);
+  }
+
   if (userProvided) {
     throw new Error("Not implemented");
-  } else {
-    return new DefaultDB(context);
   }
+
+  return new DefaultDB(context);
 }
 
 export const reduceToPerRepo = (rows: DBRowSelect[]) =>
