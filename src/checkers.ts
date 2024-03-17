@@ -70,11 +70,22 @@ export const worksapceCheckerSetup: CheckerSetuper = () => {
 };
 
 /** Checks current open file */
-export const openFileCheckerSetup: CheckerSetuper = () => {
+export const openFileCheckerSetup: CheckerSetuper = (
+  context: vscode.ExtensionContext
+) => {
+  let fileWhenLastWorked: string | undefined;
+
+  subscribe(
+    vscode.workspace.onDidChangeTextDocument(async () => {
+      fileWhenLastWorked = vscode.window.activeTextEditor?.document.fileName;
+    }),
+    context
+  );
+
   return async () => {
     return {
       key: "current_file",
-      value: vscode.window.activeTextEditor?.document.fileName,
+      value: fileWhenLastWorked,
     };
   };
 };
