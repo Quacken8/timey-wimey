@@ -137,7 +137,7 @@ export class RepeatingSaver {
 }
 
 export class StatusBarUpdater {
-  interval = 1 * 1000;
+  interval = 1 * 1000 * 60;
   timer?: Timer;
   statusBarItem?: vscode.StatusBarItem;
   getTodaysWorkFromDB?: () => Promise<string>;

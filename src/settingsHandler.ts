@@ -35,7 +35,7 @@ export function setTimerSettingsAndSubscribe(
       customChecker,
     ];
 
-    const db = await getDB(context);
+    const db = getDB(context);
     repeatingSaver.insertToDB = (row) => db.insert(row);
 
     const weGoin = repeatingSaver.startTimer();

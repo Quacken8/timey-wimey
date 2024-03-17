@@ -127,7 +127,8 @@ export class DebuggingDB {
   }
 
   async insert(row: Promise<CheckerOutput>[]) {
-    console.log("Inserting", await Promise.all(row));
+    console.log("Inserting");
+    (await Promise.all(row)).map((r) => console.log(`${r.key}: \t ${r.value}`));
   }
 
   getRows(

@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { subscribe } from "./utils";
 import dayjs from "dayjs";
 import { gitlogPromise } from "gitlog";
+import { debugLog } from "./debugLogger";
 
 /** Checks current time */
 export const timeChecherSetup: CheckerSetuper = () => {
@@ -21,7 +22,7 @@ export type TimeEntry = {
 
 /** Sets up a checker that checks whether the user has worked in the last cycle */
 export const workingCheckerSetup: CheckerSetuper = (context) => {
-  let working: boolean = false;
+  let working: boolean = true;
   subscribe(
     vscode.workspace.onDidChangeTextDocument(async () => {
       working = true;
@@ -41,20 +42,22 @@ export const workingCheckerSetup: CheckerSetuper = (context) => {
 
 /** Sets up a checker that checks whether the window is focused */
 export const windowsFocusedCheckerSetup: CheckerSetuper = (context) => {
-  let focusedRightNow: boolean = false;
-  let focusedThisCycle: boolean = false;
+  let focusedRightNow: boolean = vscode.window.state.focused;
+  let focusedThisCycle: boolean = vscode.window.state.focused;
   subscribe(
     vscode.window.onDidChangeWindowState((event) => {
       focusedRightNow = event.focused;
       if (focusedRightNow) focusedThisCycle = true;
+      debugLog({ focusedRightNow, focusedThisCycle });
     }),
     context
   );
   return async () => {
+    const value = focusedRightNow;
     focusedThisCycle = false;
     return {
       key: "window_focused",
-      value: focusedThisCycle,
+      value,
     };
   };
 };
@@ -73,7 +76,8 @@ export const worksapceCheckerSetup: CheckerSetuper = () => {
 export const openFileCheckerSetup: CheckerSetuper = (
   context: vscode.ExtensionContext
 ) => {
-  let fileWhenLastWorked: string | undefined;
+  let fileWhenLastWorked: string | undefined =
+    vscode.window.activeTextEditor?.document.fileName;
 
   subscribe(
     vscode.workspace.onDidChangeTextDocument(async () => {
