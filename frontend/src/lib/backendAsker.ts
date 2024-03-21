@@ -1,6 +1,6 @@
-import dayjs from "dayjs";
-import "vscode-webview";
-const vscode = acquireVsCodeApi();
+import type { WebviewApi } from "vscode-webview";
+
+const vscode: WebviewApi<unknown> = acquireVsCodeApi();
 import type { Answer, Query } from "@extension/src/ui/backend";
 import type { DBRowSelect } from "@extension/src/db/schema";
 

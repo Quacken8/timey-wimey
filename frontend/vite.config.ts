@@ -14,5 +14,8 @@ export default defineConfig(({ command }) => ({
   ],
   build: {
     minify: false,
+    rollupOptions: {
+      external: ["vscode-webview"],
+    },
   },
 }));
