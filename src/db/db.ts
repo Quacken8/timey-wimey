@@ -60,6 +60,13 @@ export class DefaultDB extends DB {
 
   async insert(row: Promise<CheckerOutput>[]) {
     const resolved = parseForDB(await Promise.all(row));
+    if (
+      process.env.NODE_ENV === "development" &&
+      (resolved.working || resolved.window_focused)
+    ) {
+      console.log("Inserting", resolved);
+      return;
+    }
     if (resolved.working || resolved.window_focused)
       this.#db.insert(entries).values(resolved).run();
   }
@@ -153,11 +160,6 @@ export class DebuggingDB {
 
 export function getDB(context: vscode.ExtensionContext): DB {
   const userProvided = false;
-
-  const development = process.env.NODE_ENV === "development";
-  if (development) {
-    return new DebuggingDB(context);
-  }
 
   if (userProvided) {
     throw new Error("Not implemented");

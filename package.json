@@ -64,7 +64,7 @@
     "test-compile": "tsc -p ./",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && pnpm run lint",
+    "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
     "rebuild-sqlite": "pnpm electron-rebuild -f -w better-sqlite3 -v 27.2.3",

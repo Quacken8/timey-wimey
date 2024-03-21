@@ -1,5 +1,9 @@
 <script>
-  document.addEventListener("change", askForData); // reactivity lmao
+  document.addEventListener("change", () =>
+    askForData().then((event) => {
+      putFullDataInMain(event.content);
+    })
+  ); // reactivity lmao
   setTimeout(async () => {
     document.getElementById("to").value = formatDate(new Date());
     const lastMonth = new Date();
