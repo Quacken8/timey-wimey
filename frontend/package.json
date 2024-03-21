@@ -19,6 +19,9 @@
     "vite": "^5.2.0"
   },
   "dependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/vscode-webview": "^1.57.5",
+    "dayjs": "^1.11.10",
     "unocss": "^0.58.6",
     "vite-plugin-singlefile": "^2.0.1"
   }
