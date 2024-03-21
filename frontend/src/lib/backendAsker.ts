@@ -1,11 +1,21 @@
 import type { WebviewApi } from "vscode-webview";
 
-const vscode: WebviewApi<unknown> = acquireVsCodeApi();
 import type { Answer, Query } from "@extension/src/ui/backend";
 import type { DBRowSelect } from "@extension/src/db/schema";
 
+const isDev = process.env.NODE_ENV === "development";
+
+let vscode: WebviewApi<unknown>;
+if (!isDev) {
+  vscode = acquireVsCodeApi();
+}
+
 function postMessage(message: Query) {
-  vscode.postMessage(message);
+  if (isDev) {
+    console.log(message);
+  } else {
+    vscode.postMessage(message);
+  }
 }
 
 export function getData(

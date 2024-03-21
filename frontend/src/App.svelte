@@ -1,23 +1,23 @@
 <script lang="ts">
-  import Summary from "./lib/Summary.svelte";
+  import Summary, { type SummaryData } from "./lib/Summary.svelte";
   import Sidebar from "./lib/Sidebar.svelte";
   import { getSummary } from "./lib/dataParser";
   import { getData } from "./lib/backendAsker";
-  import dayjs from "dayjs";
+  import type { DateRange } from "./lib/DateSelector.svelte";
 
   let selectedWorkspaces: Set<string>;
-  let selectedRange = {
-    from: dayjs().startOf("month"),
-    to: dayjs(),
-  };
+  let selectedRange: DateRange;
 
-  $: summaryData = getSummary(
-    getData(
-      selectedRange.from.toDate(),
-      selectedRange.to.toDate(),
-      Array.from(selectedWorkspaces)
-    )
-  );
+  let summaryData: Promise<SummaryData>;
+  $: if (selectedRange && selectedWorkspaces) {
+    summaryData = getSummary(
+      getData(
+        selectedRange.from.toDate(),
+        selectedRange.to.toDate(),
+        Array.from(selectedWorkspaces)
+      )
+    );
+  }
 </script>
 
 <main>
@@ -31,7 +31,7 @@
   </div>
 
   <div style:grid-area="sidebar">
-    <Sidebar bind:selectedWorkspaces />
+    <Sidebar bind:selectedWorkspaces bind:selectedRange />
   </div>
 </main>
 
