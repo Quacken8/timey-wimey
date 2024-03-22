@@ -16,7 +16,7 @@ export const webviewCallback = async (context: vscode.ExtensionContext) => {
 
 async function getWebviewContent(context: vscode.ExtensionContext) {
   const pathToHtml = vscode.Uri.file(
-    path.join(context.extensionPath, "src", "ui", "frontend.html")
+    path.join(context.extensionPath, "src", "ui", "index.html")
   );
   const html = new TextDecoder().decode(
     await vscode.workspace.fs.readFile(pathToHtml)
