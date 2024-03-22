@@ -1,21 +1,10 @@
-import type { WebviewApi } from "vscode-webview";
-
 import type { Answer, Query } from "@extension/src/ui/backend";
 import type { DBRowSelect } from "@extension/src/db/schema";
 
-const isDev = process.env.NODE_ENV === "development";
-
-let vscode: WebviewApi<unknown>;
-if (!isDev) {
-  vscode = acquireVsCodeApi();
-}
+let vscode = acquireVsCodeApi();
 
 function postMessage(message: Query) {
-  if (isDev) {
-    console.log(message);
-  } else {
-    vscode.postMessage(message);
-  }
+  vscode.postMessage(message);
 }
 
 export function getData(
@@ -31,14 +20,14 @@ export function getData(
       }
     }
 
-    window.addEventListener("message", messageHandler);
-
-    postMessage({
+    const message: Query = {
       type: "fullData",
       from,
       to,
       workspaces,
-    });
+    };
+    window.addEventListener("message", messageHandler);
+    postMessage(message);
   });
 }
 

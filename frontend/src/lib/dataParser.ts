@@ -12,24 +12,25 @@ export async function getSummary(
     workingMinutes: 0,
     focusedMinutes: 0,
   };
-
   // to avoid overlapping entries
-  let alreadyAccountedFor: { start: dayjs.Dayjs; end: dayjs.Dayjs } | undefined;
+  // let alreadyAccountedFor: { start: dayjs.Dayjs; end: dayjs.Dayjs } | undefined;
   for (const row of data) {
-    const start = dayjs(row.timestamp);
-    const end = dayjs(row.timestamp).add(row.interval_minutes, "minute");
+    workData.workingMinutes += row.interval_minutes * +row.working;
+    workData.focusedMinutes += row.interval_minutes * +row.window_focused;
+    // const start = dayjs(row.timestamp);
+    // const end = dayjs(row.timestamp).add(row.interval_minutes, "minutes");
 
-    const nonOverlappingMins = dayjs
-      .max(start, alreadyAccountedFor?.start ?? start)!
-      .diff(dayjs.min(end, alreadyAccountedFor?.end ?? end)!, "minute");
+    // const nonOverlappingMins = dayjs
+    //   .max(start, alreadyAccountedFor?.start ?? start)!
+    //   .diff(dayjs.min(end, alreadyAccountedFor?.end ?? end)!, "minutes");
 
-    workData.workingMinutes += nonOverlappingMins * +row.working;
-    workData.focusedMinutes += nonOverlappingMins * +row.window_focused;
+    // workData.workingMinutes += nonOverlappingMins * +row.working;
+    // workData.focusedMinutes += nonOverlappingMins * +row.window_focused;
 
-    alreadyAccountedFor = {
-      start: dayjs.min(start, alreadyAccountedFor?.start ?? start)!,
-      end: dayjs.max(end, alreadyAccountedFor?.end ?? end)!,
-    };
+    // alreadyAccountedFor = {
+    //   start: dayjs.min(start, alreadyAccountedFor?.start ?? start)!,
+    //   end: dayjs.max(end, alreadyAccountedFor?.end ?? end)!,
+    // };
   }
 
   return workData;

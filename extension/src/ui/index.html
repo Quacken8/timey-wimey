@@ -501,44 +501,12 @@ class SvelteComponent {
 const PUBLIC_VERSION = "4";
 if (typeof window !== "undefined")
   (window.__svelte || (window.__svelte = { v: /* @__PURE__ */ new Set() })).v.add(PUBLIC_VERSION);
-function create_catch_block$1(ctx) {
-  let p;
-  let t0;
-  let t1_value = (
-    /*error*/
-    ctx[2].message + ""
-  );
-  let t1;
-  return {
-    c() {
-      p = element("p");
-      t0 = text("Error: ");
-      t1 = text(t1_value);
-    },
-    m(target, anchor) {
-      insert(target, p, anchor);
-      append(p, t0);
-      append(p, t1);
-    },
-    p(ctx2, dirty) {
-      if (dirty & /*summaryData*/
-      1 && t1_value !== (t1_value = /*error*/
-      ctx2[2].message + ""))
-        set_data(t1, t1_value);
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(p);
-      }
-    }
-  };
-}
-function create_then_block$1(ctx) {
+function create_if_block_1(ctx) {
   let div0;
   let t0;
   let t1_value = toHoursMinutes(
     /*data*/
-    ctx[1].workingMinutes
+    ctx[0].workingMinutes
   ) + "";
   let t1;
   let t2;
@@ -546,7 +514,7 @@ function create_then_block$1(ctx) {
   let t3;
   let t4_value = toHoursMinutes(
     /*data*/
-    ctx[1].focusedMinutes
+    ctx[0].focusedMinutes
   ) + "";
   let t4;
   return {
@@ -569,16 +537,16 @@ function create_then_block$1(ctx) {
       append(div1, t4);
     },
     p(ctx2, dirty) {
-      if (dirty & /*summaryData*/
+      if (dirty & /*data*/
       1 && t1_value !== (t1_value = toHoursMinutes(
         /*data*/
-        ctx2[1].workingMinutes
+        ctx2[0].workingMinutes
       ) + ""))
         set_data(t1, t1_value);
-      if (dirty & /*summaryData*/
+      if (dirty & /*data*/
       1 && t4_value !== (t4_value = toHoursMinutes(
         /*data*/
-        ctx2[1].focusedMinutes
+        ctx2[0].focusedMinutes
       ) + ""))
         set_data(t4, t4_value);
     },
@@ -591,17 +559,31 @@ function create_then_block$1(ctx) {
     }
   };
 }
-function create_pending_block$1(ctx) {
+function create_if_block(ctx) {
   let p;
+  let t0;
+  let t1_value = (
+    /*error*/
+    ctx[1].message + ""
+  );
+  let t1;
   return {
     c() {
       p = element("p");
-      p.textContent = "Loading...";
+      t0 = text("Error: ");
+      t1 = text(t1_value);
     },
     m(target, anchor) {
       insert(target, p, anchor);
+      append(p, t0);
+      append(p, t1);
     },
-    p: noop,
+    p(ctx2, dirty) {
+      if (dirty & /*error*/
+      2 && t1_value !== (t1_value = /*error*/
+      ctx2[1].message + ""))
+        set_data(t1, t1_value);
+    },
     d(detaching) {
       if (detaching) {
         detach(p);
@@ -613,46 +595,48 @@ function create_fragment$4(ctx) {
   let div;
   let h1;
   let t1;
-  let promise;
-  let info = {
-    ctx,
-    current: null,
-    token: null,
-    hasCatch: true,
-    pending: create_pending_block$1,
-    then: create_then_block$1,
-    catch: create_catch_block$1,
-    value: 1,
-    error: 2
-  };
-  handle_promise(promise = /*summaryData*/
-  ctx[0], info);
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*error*/
+      ctx2[1]
+    )
+      return create_if_block;
+    if (
+      /*data*/
+      ctx2[0]
+    )
+      return create_if_block_1;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block = current_block_type && current_block_type(ctx);
   return {
     c() {
       div = element("div");
       h1 = element("h1");
       h1.textContent = "Timey-wimey data!";
       t1 = space();
-      info.block.c();
+      if (if_block)
+        if_block.c();
       attr(div, "class", "container");
     },
     m(target, anchor) {
       insert(target, div, anchor);
       append(div, h1);
       append(div, t1);
-      info.block.m(div, info.anchor = null);
-      info.mount = () => div;
-      info.anchor = null;
+      if (if_block)
+        if_block.m(div, null);
     },
-    p(new_ctx, [dirty]) {
-      ctx = new_ctx;
-      info.ctx = ctx;
-      if (dirty & /*summaryData*/
-      1 && promise !== (promise = /*summaryData*/
-      ctx[0]) && handle_promise(promise, info))
-        ;
-      else {
-        update_await_block_branch(info, ctx, dirty);
+    p(ctx2, [dirty]) {
+      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block) {
+        if_block.p(ctx2, dirty);
+      } else {
+        if (if_block)
+          if_block.d(1);
+        if_block = current_block_type && current_block_type(ctx2);
+        if (if_block) {
+          if_block.c();
+          if_block.m(div, null);
+        }
       }
     },
     i: noop,
@@ -661,9 +645,9 @@ function create_fragment$4(ctx) {
       if (detaching) {
         detach(div);
       }
-      info.block.d();
-      info.token = null;
-      info = null;
+      if (if_block) {
+        if_block.d();
+      }
     }
   };
 }
@@ -673,17 +657,372 @@ function toHoursMinutes(minutes) {
   return `${hours}h ${remainingMinutes}m`;
 }
 function instance$4($$self, $$props, $$invalidate) {
-  let { summaryData } = $$props;
+  let { summaryData = new Promise(() => {
+  }) } = $$props;
+  let data;
+  let error;
   $$self.$$set = ($$props2) => {
     if ("summaryData" in $$props2)
-      $$invalidate(0, summaryData = $$props2.summaryData);
+      $$invalidate(2, summaryData = $$props2.summaryData);
   };
-  return [summaryData];
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*summaryData*/
+    4) {
+      summaryData.then((result) => {
+        $$invalidate(0, data = result);
+        $$invalidate(1, error = void 0);
+      }).catch((err) => {
+        $$invalidate(1, error = err);
+      });
+    }
+  };
+  return [data, error, summaryData];
 }
 class Summary extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$4, create_fragment$4, safe_not_equal, { summaryData: 0 });
+    init(this, options, instance$4, create_fragment$4, safe_not_equal, { summaryData: 2 });
+  }
+}
+let vscode = acquireVsCodeApi();
+function postMessage(message) {
+  vscode.postMessage(message);
+}
+function getData(from, to, workspaces) {
+  return new Promise((resolve) => {
+    function messageHandler(event) {
+      if (event.data.type === "fullData") {
+        window.removeEventListener("message", messageHandler);
+        resolve(event.data.content);
+      }
+    }
+    const message = {
+      type: "fullData",
+      from,
+      to,
+      workspaces
+    };
+    window.addEventListener("message", messageHandler);
+    postMessage(message);
+  });
+}
+function getWorkspaces() {
+  return new Promise((resolve) => {
+    function messageHandler(event) {
+      if (event.data.type === "workspaces") {
+        window.removeEventListener("message", messageHandler);
+        resolve(event.data.content);
+      }
+    }
+    window.addEventListener("message", messageHandler);
+    vscode.postMessage({ type: "workspaces" });
+  });
+}
+function get_each_context(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[5] = list[i];
+  return child_ctx;
+}
+function create_catch_block(ctx) {
+  let li;
+  let t0;
+  let t1_value = (
+    /*error*/
+    ctx[8].message + ""
+  );
+  let t1;
+  return {
+    c() {
+      li = element("li");
+      t0 = text("Error: ");
+      t1 = text(t1_value);
+    },
+    m(target, anchor) {
+      insert(target, li, anchor);
+      append(li, t0);
+      append(li, t1);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*workspaces*/
+      2 && t1_value !== (t1_value = /*error*/
+      ctx2[8].message + ""))
+        set_data(t1, t1_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(li);
+      }
+    }
+  };
+}
+function create_then_block(ctx) {
+  let each_1_anchor;
+  let each_value = ensure_array_like(
+    /*ws*/
+    ctx[4]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value.length; i += 1) {
+    each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+  }
+  return {
+    c() {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      each_1_anchor = empty();
+    },
+    m(target, anchor) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(target, anchor);
+        }
+      }
+      insert(target, each_1_anchor, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*workspaces, selectedWorkspaces, Set*/
+      3) {
+        each_value = ensure_array_like(
+          /*ws*/
+          ctx2[4]
+        );
+        let i;
+        for (i = 0; i < each_value.length; i += 1) {
+          const child_ctx = get_each_context(ctx2, each_value, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+          } else {
+            each_blocks[i] = create_each_block(child_ctx);
+            each_blocks[i].c();
+            each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
+          }
+        }
+        for (; i < each_blocks.length; i += 1) {
+          each_blocks[i].d(1);
+        }
+        each_blocks.length = each_value.length;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(each_1_anchor);
+      }
+      destroy_each(each_blocks, detaching);
+    }
+  };
+}
+function create_each_block(ctx) {
+  let li;
+  let input;
+  let input_checked_value;
+  let t0;
+  let t1_value = (
+    /*workspace*/
+    ctx[5] + ""
+  );
+  let t1;
+  let t2;
+  let mounted;
+  let dispose;
+  function change_handler() {
+    return (
+      /*change_handler*/
+      ctx[3](
+        /*workspace*/
+        ctx[5]
+      )
+    );
+  }
+  return {
+    c() {
+      li = element("li");
+      input = element("input");
+      t0 = space();
+      t1 = text(t1_value);
+      t2 = space();
+      attr(input, "type", "checkbox");
+      input.checked = input_checked_value = /*selectedWorkspaces*/
+      ctx[0].has(
+        /*workspace*/
+        ctx[5]
+      );
+    },
+    m(target, anchor) {
+      insert(target, li, anchor);
+      append(li, input);
+      append(li, t0);
+      append(li, t1);
+      append(li, t2);
+      if (!mounted) {
+        dispose = listen(input, "change", change_handler);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty & /*selectedWorkspaces, workspaces*/
+      3 && input_checked_value !== (input_checked_value = /*selectedWorkspaces*/
+      ctx[0].has(
+        /*workspace*/
+        ctx[5]
+      ))) {
+        input.checked = input_checked_value;
+      }
+      if (dirty & /*workspaces*/
+      2 && t1_value !== (t1_value = /*workspace*/
+      ctx[5] + ""))
+        set_data(t1, t1_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(li);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_pending_block(ctx) {
+  let li;
+  return {
+    c() {
+      li = element("li");
+      li.textContent = "Loading...";
+    },
+    m(target, anchor) {
+      insert(target, li, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(li);
+      }
+    }
+  };
+}
+function create_fragment$3(ctx) {
+  let h2;
+  let t1;
+  let button;
+  let t3;
+  let ul;
+  let promise;
+  let mounted;
+  let dispose;
+  let info = {
+    ctx,
+    current: null,
+    token: null,
+    hasCatch: true,
+    pending: create_pending_block,
+    then: create_then_block,
+    catch: create_catch_block,
+    value: 4,
+    error: 8
+  };
+  handle_promise(promise = /*workspaces*/
+  ctx[1], info);
+  return {
+    c() {
+      h2 = element("h2");
+      h2.textContent = "Workspaces";
+      t1 = space();
+      button = element("button");
+      button.textContent = "Invert selection";
+      t3 = space();
+      ul = element("ul");
+      info.block.c();
+      attr(ul, "class", "svelte-eofbbf");
+    },
+    m(target, anchor) {
+      insert(target, h2, anchor);
+      insert(target, t1, anchor);
+      insert(target, button, anchor);
+      insert(target, t3, anchor);
+      insert(target, ul, anchor);
+      info.block.m(ul, info.anchor = null);
+      info.mount = () => ul;
+      info.anchor = null;
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*invertSelection*/
+          ctx[2]
+        );
+        mounted = true;
+      }
+    },
+    p(new_ctx, [dirty]) {
+      ctx = new_ctx;
+      info.ctx = ctx;
+      if (dirty & /*workspaces*/
+      2 && promise !== (promise = /*workspaces*/
+      ctx[1]) && handle_promise(promise, info))
+        ;
+      else {
+        update_await_block_branch(info, ctx, dirty);
+      }
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(h2);
+        detach(t1);
+        detach(button);
+        detach(t3);
+        detach(ul);
+      }
+      info.block.d();
+      info.token = null;
+      info = null;
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function instance$3($$self, $$props, $$invalidate) {
+  let { selectedWorkspaces = /* @__PURE__ */ new Set() } = $$props;
+  let workspaces = new Promise(() => {
+  });
+  onMount(() => {
+    $$invalidate(1, workspaces = getWorkspaces());
+    workspaces.then((ws) => {
+      $$invalidate(0, selectedWorkspaces = new Set(ws));
+    });
+  });
+  const invertSelection = () => {
+    const newSet = /* @__PURE__ */ new Set();
+    workspaces.then((ws) => {
+      ws.forEach((workspace) => {
+        if (!selectedWorkspaces.has(workspace)) {
+          newSet.add(workspace);
+        }
+      });
+    }).then(() => {
+      $$invalidate(0, selectedWorkspaces = newSet);
+    });
+  };
+  const change_handler = (workspace) => {
+    if (selectedWorkspaces.has(workspace)) {
+      selectedWorkspaces.delete(workspace);
+    } else {
+      selectedWorkspaces.add(workspace);
+    }
+    $$invalidate(0, selectedWorkspaces = new Set(selectedWorkspaces));
+  };
+  $$self.$$set = ($$props2) => {
+    if ("selectedWorkspaces" in $$props2)
+      $$invalidate(0, selectedWorkspaces = $$props2.selectedWorkspaces);
+  };
+  return [selectedWorkspaces, workspaces, invertSelection, change_handler];
+}
+class WorkspaceSelector extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$3, create_fragment$3, safe_not_equal, { selectedWorkspaces: 0 });
   }
 }
 var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
@@ -982,301 +1321,6 @@ var dayjs_min = { exports: {} };
 })(dayjs_min);
 var dayjs_minExports = dayjs_min.exports;
 const dayjs = /* @__PURE__ */ getDefaultExportFromCjs(dayjs_minExports);
-let vscode;
-{
-  vscode = acquireVsCodeApi();
-}
-function postMessage(message) {
-  {
-    vscode.postMessage(message);
-  }
-}
-function getData(from, to, workspaces) {
-  return new Promise((resolve) => {
-    function messageHandler(event) {
-      if (event.data.type === "fullData") {
-        window.removeEventListener("message", messageHandler);
-        resolve(event.data.content);
-      }
-    }
-    window.addEventListener("message", messageHandler);
-    postMessage({
-      type: "fullData",
-      from,
-      to,
-      workspaces
-    });
-  });
-}
-function getWorkspaces() {
-  return new Promise((resolve) => {
-    function messageHandler(event) {
-      if (event.data.type === "workspaces") {
-        window.removeEventListener("message", messageHandler);
-        resolve(event.data.content);
-      }
-    }
-    window.addEventListener("message", messageHandler);
-    vscode.postMessage({ type: "workspaces" });
-  });
-}
-function get_each_context(ctx, list, i) {
-  const child_ctx = ctx.slice();
-  child_ctx[4] = list[i];
-  return child_ctx;
-}
-function create_catch_block(ctx) {
-  let li;
-  let t0;
-  let t1_value = (
-    /*error*/
-    ctx[7].message + ""
-  );
-  let t1;
-  return {
-    c() {
-      li = element("li");
-      t0 = text("Error: ");
-      t1 = text(t1_value);
-    },
-    m(target, anchor) {
-      insert(target, li, anchor);
-      append(li, t0);
-      append(li, t1);
-    },
-    p(ctx2, dirty) {
-      if (dirty & /*workspaces*/
-      2 && t1_value !== (t1_value = /*error*/
-      ctx2[7].message + ""))
-        set_data(t1, t1_value);
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(li);
-      }
-    }
-  };
-}
-function create_then_block(ctx) {
-  let each_1_anchor;
-  let each_value = ensure_array_like(
-    /*ws*/
-    ctx[3]
-  );
-  let each_blocks = [];
-  for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
-  }
-  return {
-    c() {
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].c();
-      }
-      each_1_anchor = empty();
-    },
-    m(target, anchor) {
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        if (each_blocks[i]) {
-          each_blocks[i].m(target, anchor);
-        }
-      }
-      insert(target, each_1_anchor, anchor);
-    },
-    p(ctx2, dirty) {
-      if (dirty & /*workspaces, selectedWorkspaces, Set*/
-      3) {
-        each_value = ensure_array_like(
-          /*ws*/
-          ctx2[3]
-        );
-        let i;
-        for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context(ctx2, each_value, i);
-          if (each_blocks[i]) {
-            each_blocks[i].p(child_ctx, dirty);
-          } else {
-            each_blocks[i] = create_each_block(child_ctx);
-            each_blocks[i].c();
-            each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
-          }
-        }
-        for (; i < each_blocks.length; i += 1) {
-          each_blocks[i].d(1);
-        }
-        each_blocks.length = each_value.length;
-      }
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(each_1_anchor);
-      }
-      destroy_each(each_blocks, detaching);
-    }
-  };
-}
-function create_each_block(ctx) {
-  let li;
-  let input;
-  let input_checked_value;
-  let t0;
-  let t1_value = (
-    /*workspace*/
-    ctx[4] + ""
-  );
-  let t1;
-  let t2;
-  let mounted;
-  let dispose;
-  function change_handler() {
-    return (
-      /*change_handler*/
-      ctx[2](
-        /*workspace*/
-        ctx[4]
-      )
-    );
-  }
-  return {
-    c() {
-      li = element("li");
-      input = element("input");
-      t0 = space();
-      t1 = text(t1_value);
-      t2 = space();
-      attr(input, "type", "checkbox");
-      input.checked = input_checked_value = /*selectedWorkspaces*/
-      ctx[0].has(
-        /*workspace*/
-        ctx[4]
-      );
-    },
-    m(target, anchor) {
-      insert(target, li, anchor);
-      append(li, input);
-      append(li, t0);
-      append(li, t1);
-      append(li, t2);
-      if (!mounted) {
-        dispose = listen(input, "change", change_handler);
-        mounted = true;
-      }
-    },
-    p(new_ctx, dirty) {
-      ctx = new_ctx;
-      if (dirty & /*selectedWorkspaces, workspaces*/
-      3 && input_checked_value !== (input_checked_value = /*selectedWorkspaces*/
-      ctx[0].has(
-        /*workspace*/
-        ctx[4]
-      ))) {
-        input.checked = input_checked_value;
-      }
-      if (dirty & /*workspaces*/
-      2 && t1_value !== (t1_value = /*workspace*/
-      ctx[4] + ""))
-        set_data(t1, t1_value);
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(li);
-      }
-      mounted = false;
-      dispose();
-    }
-  };
-}
-function create_pending_block(ctx) {
-  let li;
-  return {
-    c() {
-      li = element("li");
-      li.textContent = "Loading...";
-    },
-    m(target, anchor) {
-      insert(target, li, anchor);
-    },
-    p: noop,
-    d(detaching) {
-      if (detaching) {
-        detach(li);
-      }
-    }
-  };
-}
-function create_fragment$3(ctx) {
-  let ul;
-  let promise;
-  let info = {
-    ctx,
-    current: null,
-    token: null,
-    hasCatch: true,
-    pending: create_pending_block,
-    then: create_then_block,
-    catch: create_catch_block,
-    value: 3,
-    error: 7
-  };
-  handle_promise(promise = /*workspaces*/
-  ctx[1], info);
-  return {
-    c() {
-      ul = element("ul");
-      info.block.c();
-    },
-    m(target, anchor) {
-      insert(target, ul, anchor);
-      info.block.m(ul, info.anchor = null);
-      info.mount = () => ul;
-      info.anchor = null;
-    },
-    p(new_ctx, [dirty]) {
-      ctx = new_ctx;
-      info.ctx = ctx;
-      if (dirty & /*workspaces*/
-      2 && promise !== (promise = /*workspaces*/
-      ctx[1]) && handle_promise(promise, info))
-        ;
-      else {
-        update_await_block_branch(info, ctx, dirty);
-      }
-    },
-    i: noop,
-    o: noop,
-    d(detaching) {
-      if (detaching) {
-        detach(ul);
-      }
-      info.block.d();
-      info.token = null;
-      info = null;
-    }
-  };
-}
-function instance$3($$self, $$props, $$invalidate) {
-  let { selectedWorkspaces = /* @__PURE__ */ new Set() } = $$props;
-  let workspaces;
-  onMount(() => $$invalidate(1, workspaces = getWorkspaces()));
-  const change_handler = (workspace) => {
-    if (selectedWorkspaces.has(workspace)) {
-      selectedWorkspaces.delete(workspace);
-    } else {
-      selectedWorkspaces.add(workspace);
-    }
-    $$invalidate(0, selectedWorkspaces = new Set(selectedWorkspaces));
-  };
-  $$self.$$set = ($$props2) => {
-    if ("selectedWorkspaces" in $$props2)
-      $$invalidate(0, selectedWorkspaces = $$props2.selectedWorkspaces);
-  };
-  return [selectedWorkspaces, workspaces, change_handler];
-}
-class WorkspaceSelector extends SvelteComponent {
-  constructor(options) {
-    super();
-    init(this, options, instance$3, create_fragment$3, safe_not_equal, { selectedWorkspaces: 0 });
-  }
-}
 function create_fragment$2(ctx) {
   let h30;
   let t1;
@@ -1316,8 +1360,8 @@ function create_fragment$2(ctx) {
       insert(target, input1, anchor);
       set_input_value(
         input1,
-        /*fromInput*/
-        ctx[0]
+        /*toInput*/
+        ctx[1]
       );
       if (!mounted) {
         dispose = [
@@ -1325,13 +1369,13 @@ function create_fragment$2(ctx) {
             input0,
             "input",
             /*input0_input_handler*/
-            ctx[2]
+            ctx[3]
           ),
           listen(
             input1,
             "input",
             /*input1_input_handler*/
-            ctx[3]
+            ctx[4]
           )
         ];
         mounted = true;
@@ -1346,12 +1390,12 @@ function create_fragment$2(ctx) {
           ctx2[0]
         );
       }
-      if (dirty & /*fromInput*/
-      1) {
+      if (dirty & /*toInput*/
+      2) {
         set_input_value(
           input1,
-          /*fromInput*/
-          ctx2[0]
+          /*toInput*/
+          ctx2[1]
         );
       }
     },
@@ -1374,47 +1418,46 @@ function create_fragment$2(ctx) {
 }
 function instance$2($$self, $$props, $$invalidate) {
   let { selectedRange = {
-    from: dayjs(),
-    to: dayjs().startOf("month")
+    from: dayjs().startOf("month"),
+    to: dayjs()
   } } = $$props;
-  let fromInput;
-  let toInput;
+  let fromInput = selectedRange.from.format("YYYY-MM-DDTHH:mm");
+  let toInput = selectedRange.to.format("YYYY-MM-DDTHH:mm");
   function input0_input_handler() {
     fromInput = this.value;
     $$invalidate(0, fromInput);
   }
   function input1_input_handler() {
-    fromInput = this.value;
-    $$invalidate(0, fromInput);
+    toInput = this.value;
+    $$invalidate(1, toInput);
   }
   $$self.$$set = ($$props2) => {
     if ("selectedRange" in $$props2)
-      $$invalidate(1, selectedRange = $$props2.selectedRange);
+      $$invalidate(2, selectedRange = $$props2.selectedRange);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*fromInput*/
     1) {
-      $$invalidate(1, selectedRange.from = dayjs(fromInput), selectedRange);
+      $$invalidate(2, selectedRange.from = dayjs(fromInput), selectedRange);
+    }
+    if ($$self.$$.dirty & /*toInput*/
+    2) {
+      $$invalidate(2, selectedRange.to = dayjs(toInput), selectedRange);
     }
   };
-  $$invalidate(1, selectedRange.to = dayjs(toInput), selectedRange);
-  return [fromInput, selectedRange, input0_input_handler, input1_input_handler];
+  return [fromInput, toInput, selectedRange, input0_input_handler, input1_input_handler];
 }
 class DateSelector extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$2, create_fragment$2, safe_not_equal, { selectedRange: 1 });
+    init(this, options, instance$2, create_fragment$2, safe_not_equal, { selectedRange: 2 });
   }
 }
 function create_fragment$1(ctx) {
   let div;
-  let h20;
-  let t1;
   let dateselector;
   let updating_selectedRange;
-  let t2;
-  let h21;
-  let t4;
+  let t;
   let workspaceselector;
   let updating_selectedWorkspaces;
   let current;
@@ -1447,25 +1490,15 @@ function create_fragment$1(ctx) {
   return {
     c() {
       div = element("div");
-      h20 = element("h2");
-      h20.textContent = "DateTimePicker lol";
-      t1 = space();
       create_component(dateselector.$$.fragment);
-      t2 = space();
-      h21 = element("h2");
-      h21.textContent = "Workspaces";
-      t4 = space();
+      t = space();
       create_component(workspaceselector.$$.fragment);
       attr(div, "class", "sidebar");
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, h20);
-      append(div, t1);
       mount_component(dateselector, div, null);
-      append(div, t2);
-      append(div, h21);
-      append(div, t4);
+      append(div, t);
       mount_component(workspaceselector, div, null);
       current = true;
     },
@@ -1577,17 +1610,9 @@ async function getSummary(rows) {
     workingMinutes: 0,
     focusedMinutes: 0
   };
-  let alreadyAccountedFor;
   for (const row of data) {
-    const start = dayjs(row.timestamp);
-    const end = dayjs(row.timestamp).add(row.interval_minutes, "minute");
-    const nonOverlappingMins = dayjs.max(start, (alreadyAccountedFor == null ? void 0 : alreadyAccountedFor.start) ?? start).diff(dayjs.min(end, (alreadyAccountedFor == null ? void 0 : alreadyAccountedFor.end) ?? end), "minute");
-    workData.workingMinutes += nonOverlappingMins * +row.working;
-    workData.focusedMinutes += nonOverlappingMins * +row.window_focused;
-    alreadyAccountedFor = {
-      start: dayjs.min(start, (alreadyAccountedFor == null ? void 0 : alreadyAccountedFor.start) ?? start),
-      end: dayjs.max(end, (alreadyAccountedFor == null ? void 0 : alreadyAccountedFor.end) ?? end)
-    };
+    workData.workingMinutes += row.interval_minutes * +row.working;
+    workData.focusedMinutes += row.interval_minutes * +row.window_focused;
   }
   return workData;
 }
@@ -1709,6 +1734,14 @@ function instance($$self, $$props, $$invalidate) {
   let selectedWorkspaces;
   let selectedRange;
   let summaryData;
+  onMount(() => setTimeout(
+    () => {
+      if (selectedRange && selectedWorkspaces) {
+        $$invalidate(2, summaryData = getSummary(getData(selectedRange.from.toDate(), selectedRange.to.toDate(), Array.from(selectedWorkspaces))));
+      }
+    },
+    100
+  ));
   function sidebar_selectedWorkspaces_binding(value) {
     selectedWorkspaces = value;
     $$invalidate(0, selectedWorkspaces);
@@ -1743,7 +1776,7 @@ new App({
   target: document.getElementById("app")
 });
 </script>
-    <style rel="stylesheet" crossorigin>main.svelte-mxaww4{display:grid;grid-template-columns:3fr 1fr;grid-template-rows:1fr 1fr;grid-template-areas:"summary sidebar"
+    <style rel="stylesheet" crossorigin>ul.svelte-eofbbf{text-wrap:nowrap;overflow:hidden}main.svelte-mxaww4{display:grid;grid-template-columns:3fr 1fr;grid-template-rows:1fr 1fr;grid-template-areas:"summary sidebar"
       "graph sidebar"}</style>
   </head>
   <body>

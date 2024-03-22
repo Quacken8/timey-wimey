@@ -5,9 +5,32 @@
   /** @bind */
   export let selectedWorkspaces: Set<string> = new Set();
 
-  let workspaces: Promise<string[]>;
-  onMount(() => (workspaces = getWorkspaces()));
+  let workspaces: Promise<string[]> = new Promise(() => {});
+  onMount(() => {
+    workspaces = getWorkspaces();
+    workspaces.then((ws) => {
+      selectedWorkspaces = new Set(ws);
+    });
+  });
+
+  const invertSelection = () => {
+    const newSet: Set<string> = new Set();
+    workspaces
+      .then((ws) => {
+        ws.forEach((workspace) => {
+          if (!selectedWorkspaces.has(workspace)) {
+            newSet.add(workspace);
+          }
+        });
+      })
+      .then(() => {
+        selectedWorkspaces = newSet;
+      });
+  };
 </script>
+
+<h2>Workspaces</h2>
+<button on:click={invertSelection}> Invert selection </button>
 
 <ul>
   {#await workspaces}
@@ -34,3 +57,10 @@
     <li>Error: {error.message}</li>
   {/await}
 </ul>
+
+<style>
+  ul {
+    text-wrap: nowrap;
+    overflow: hidden;
+  }
+</style>
