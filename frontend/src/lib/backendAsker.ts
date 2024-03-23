@@ -19,12 +19,19 @@ function postMan(event: { data: Answer }) {
 }
 window.addEventListener("message", postMan);
 
+let idk = 0;
+function generateAddress(): number {
+  idk += 1;
+  if (idk >= Number.MAX_SAFE_INTEGER) idk = 0;
+  return idk;
+}
+
 function postMessage(
   message: Omit<Query, "address">,
   resolve: (value: Answer["content"]) => void,
   reject: (reason: any) => void
 ) {
-  const address = Math.random();
+  const address = generateAddress();
   const query = { ...message, address };
   postbox[address] = resolve;
 
