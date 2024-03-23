@@ -1,28 +1,33 @@
 <script lang="ts">
-  import Summary, { type SummaryData } from "./lib/Summary.svelte";
+  import Summary from "./lib/Summary.svelte";
   import Sidebar from "./lib/Sidebar.svelte";
-  import { getSummary } from "./lib/dataParser";
-  import { getData } from "./lib/backendAsker";
   import type { DateRange } from "./lib/DateSelector.svelte";
+  import { getSummary, getTopFiles } from "./lib/backendAsker";
+  import type { SummaryData } from "@extension/src/ui/parseToString";
 
   let selectedWorkspaces: Set<string>;
   let selectedRange: DateRange;
 
   let summaryData: Promise<SummaryData>;
+  let topFilesData: Promise<Record<string, number>>;
   $: if (selectedRange && selectedWorkspaces) {
+    topFilesData = getTopFiles(
+      selectedRange.from.toDate(),
+      selectedRange.to.toDate(),
+      Array.from(selectedWorkspaces),
+      5
+    );
     summaryData = getSummary(
-      getData(
-        selectedRange.from.toDate(),
-        selectedRange.to.toDate(),
-        Array.from(selectedWorkspaces)
-      )
+      selectedRange.from.toDate(),
+      selectedRange.to.toDate(),
+      Array.from(selectedWorkspaces)
     );
   }
 </script>
 
 <main>
   <div style:grid-area="summary">
-    <Summary {summaryData} />
+    <Summary {summaryData} {topFilesData} />
   </div>
 
   <div style:grid-area="graph">

@@ -1,19 +1,19 @@
-<script lang="ts" context="module">
-  export type SummaryData = {
-    workingMinutes: number;
-    focusedMinutes: number;
-  };
-</script>
-
 <script lang="ts">
-  export let summaryData: Promise<SummaryData> = new Promise(() => {});
+  import type { SummaryData } from "@extension/src/ui/parseToString";
 
-  let data: SummaryData;
+  export let summaryData: Promise<SummaryData> = new Promise(() => {});
+  export let topFilesData: Promise<Record<string, number>> = new Promise(
+    () => {}
+  );
+
+  let summary: SummaryData;
+  let topFiles: Record<string, number>;
   let error: Error | undefined;
 
-  $: summaryData
-    .then((result) => {
-      data = result;
+  $: Promise.all([summaryData, topFilesData])
+    .then(([summaryRes, topFilesRes]) => {
+      summary = summaryRes;
+      topFiles = topFilesRes;
       error = undefined;
     })
     .catch((err) => {
@@ -31,8 +31,22 @@
   <h1>Timey-wimey data!</h1>
   {#if error}
     <p>Error: {error.message}</p>
-  {:else if data}
-    <div>Today worked: {toHoursMinutes(data.workingMinutes)}</div>
-    <div>Today focused: {toHoursMinutes(data.focusedMinutes)}</div>
+  {:else}
+    {#if summary}
+      <h2>Summary</h2>
+      <div>Time worked: {toHoursMinutes(summary.workingMinutes)}</div>
+      <div>Time focused: {toHoursMinutes(summary.focusedMinutes)}</div>
+    {/if}
+
+    {#if topFiles}
+      <h2>Top files</h2>
+      <ul>
+        {#each Object.entries(topFiles) as [file, minutes]}
+          <li>
+            {toHoursMinutes(minutes)} — {file}
+          </li>
+        {/each}
+      </ul>
+    {/if}
   {/if}
 </div>
