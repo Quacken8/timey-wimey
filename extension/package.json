@@ -22,7 +22,7 @@
     "Other"
   ],
   "activationEvents": [
-    "workspaceContains:*"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
