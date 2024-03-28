@@ -7,3 +7,4 @@ node_modules
 .vscode/timeyWimey
 /db/
 *.sqlite
+extension/src/ui/index.html
