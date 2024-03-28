@@ -45,7 +45,7 @@ export function getMostUsedFiles(
     const workspace = row.workspace;
     let filename = row.current_file ?? "None";
     filename =
-      workspace && filename.includes(workspace)
+      workspace && filename.includes(workspace.replace("file://", "")) // FIXME ok maybe find a smart solution instead of just patching this for your own case you lazy bum
         ? filename.replace(workspace, "")
         : filename;
     if (filename in fileTimes) {
