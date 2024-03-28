@@ -42,11 +42,11 @@ export function getMostUsedFiles(
 ): Record<string, number> {
   const fileTimes: Record<string, number> = {};
   for (const row of rows) {
-    const workspace = row.workspace;
+    const workspaceFileless = row.workspace?.replace("file://", "");
     let filename = row.current_file ?? "None";
     filename =
-      workspace && filename.includes(workspace.replace("file://", "")) // FIXME ok maybe find a smart solution instead of just patching this for your own case you lazy bum
-        ? filename.replace(workspace, "")
+      workspaceFileless && filename.includes(workspaceFileless) // FIXME this is a hack that only works on my machine, study better how vscode api reports on open files in remote workspaces and other weird edge cases
+        ? filename.replace(workspaceFileless, "")
         : filename;
     if (filename in fileTimes) {
       fileTimes[filename] += row.interval_minutes;
