@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { CheckerOutput, PromiseType } from "../types";
 import { DBRowSelect, entries, parseForDB } from "./schema";
 import dayjs from "dayjs";
-import { between, and, inArray } from "drizzle-orm";
+import { between, and, inArray, max, desc } from "drizzle-orm";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import path from "path";
 import * as vscode from "vscode";
@@ -111,8 +111,15 @@ export class DefaultDB extends DB {
 
   async getWorkspaces() {
     return (
-      await this.#db.selectDistinct({ repo: entries.workspace }).from(entries)
-    ).map((row) => (row.repo === null ? "no workspace" : row.repo));
+      await this.#db
+        .selectDistinct({
+          workspace: entries.workspace,
+          latestTimestamp: max(entries.timestamp),
+        })
+        .from(entries)
+        .groupBy(entries.workspace)
+        .orderBy(desc(entries.timestamp))
+    ).map((row) => (row.workspace === null ? "no workspace" : row.workspace));
   }
 }
 
