@@ -42,19 +42,16 @@ export const workingCheckerSetup: CheckerSetuper = (context) => {
 
 /** Sets up a checker that checks whether the window is focused */
 export const windowsFocusedCheckerSetup: CheckerSetuper = (context) => {
-  let focusedRightNow: boolean = vscode.window.state.focused;
-  let focusedThisCycle: boolean = vscode.window.state.focused;
+  let focused: boolean = vscode.window.state.focused;
   subscribe(
     vscode.window.onDidChangeWindowState((event) => {
-      focusedRightNow = event.focused;
-      if (focusedRightNow) focusedThisCycle = true;
-      debugLog({ focusedRightNow, focusedThisCycle });
+      if (event.focused) focused = true;
     }),
     context
   );
   return async () => {
-    const value = focusedRightNow;
-    focusedThisCycle = false;
+    const value = focused;
+    focused = vscode.window.state.focused;
     return {
       key: "window_focused",
       value,
