@@ -3,7 +3,7 @@
   import Sidebar from "./lib/Sidebar.svelte";
   import type { DateRange } from "./lib/DateSelector.svelte";
   import { getSummary, getTopFiles } from "./lib/backendAsker";
-  import type { SummaryData } from "@extension/src/ui/parseToString";
+  import type { SummaryData } from "@extension/src/ui/parseForUI";
 
   let selectedWorkspaces: Set<string>;
   let selectedRange: DateRange;

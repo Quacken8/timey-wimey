@@ -7,7 +7,7 @@ import {
   SummaryData,
   getMostUsedFiles,
   summarize as summarize,
-} from "./parseToString";
+} from "./parseForUI";
 
 export type FullDataAnswer = {
   address: number;

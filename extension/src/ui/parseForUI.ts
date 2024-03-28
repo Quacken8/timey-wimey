@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { DBRowSelect } from "../db/schema";
+import { dateSetLength } from "./dateSetLength";
 
 export type SummaryData = {
   workingMinutes: number;
@@ -8,30 +9,14 @@ export type SummaryData = {
 };
 
 export function summarize(rows: DBRowSelect[]): SummaryData {
+  const workingAsIntervals = rows.filter((row) => row.working);
+
+  const focusedAsIntervals = rows.filter((row) => row.window_focused);
+
   const workData: SummaryData = {
-    workingMinutes: 0,
-    focusedMinutes: 0,
+    workingMinutes: dateSetLength(workingAsIntervals),
+    focusedMinutes: dateSetLength(focusedAsIntervals),
   };
-  // to avoid overlapping entries
-  // let alreadyAccountedFor: { start: dayjs.Dayjs; end: dayjs.Dayjs } | undefined;
-  for (const row of rows) {
-    workData.workingMinutes += row.interval_minutes * +row.working;
-    workData.focusedMinutes += row.interval_minutes * +row.window_focused;
-    // const start = dayjs(row.timestamp);
-    // const end = dayjs(row.timestamp).add(row.interval_minutes, "minutes");
-
-    // const nonOverlappingMins = dayjs
-    //   .max(start, alreadyAccountedFor?.start ?? start)!
-    //   .diff(dayjs.min(end, alreadyAccountedFor?.end ?? end)!, "minutes");
-
-    // workData.workingMinutes += nonOverlappingMins * +row.working;
-    // workData.focusedMinutes += nonOverlappingMins * +row.window_focused;
-
-    // alreadyAccountedFor = {
-    //   start: dayjs.min(start, alreadyAccountedFor?.start ?? start)!,
-    //   end: dayjs.max(end, alreadyAccountedFor?.end ?? end)!,
-    // };
-  }
 
   return workData;
 }
@@ -40,8 +25,10 @@ export function getMostUsedFiles(
   rows: DBRowSelect[],
   number: number
 ): Record<string, number> {
-  const fileTimes: Record<string, number> = {};
+  const fileIntervals: Record<string, DBRowSelect[]> = {};
   for (const row of rows) {
+    if (!row.working) continue;
+
     const workspaceFileless = row.workspace?.replace("file://", "");
     const workspaceRoot = row.workspace?.split("/").at(-1);
     let filename = row.current_file ?? "None";
@@ -49,15 +36,19 @@ export function getMostUsedFiles(
       workspaceFileless && filename.includes(workspaceFileless) // FIXME this is a hack that only works on my machine, study better how vscode api reports on open files in remote workspaces and other weird edge cases
         ? (workspaceRoot ?? "").concat(filename.replace(workspaceFileless, ""))
         : filename;
-    if (filename in fileTimes) {
-      fileTimes[filename] += row.interval_minutes;
-    } else {
-      fileTimes[filename] = row.interval_minutes;
-    }
+
+    fileIntervals[filename] = [...(fileIntervals[filename] ?? []), row];
   }
 
+  const fileLengths = Object.fromEntries(
+    Object.entries(fileIntervals).map(([filename, intervals]) => [
+      filename,
+      dateSetLength(intervals),
+    ])
+  );
+
   return Object.fromEntries(
-    Object.entries(fileTimes)
+    Object.entries(fileLengths)
       .sort(([, a], [, b]) => b - a)
       .slice(0, number)
   );

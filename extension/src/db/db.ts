@@ -7,7 +7,8 @@ import { between, and, inArray, max, desc } from "drizzle-orm";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import path from "path";
 import * as vscode from "vscode";
-import { minutesToString } from "../ui/parseToString";
+import { minutesToString } from "../ui/parseForUI";
+import { dateSetLength } from "../ui/dateSetLength";
 
 export abstract class DB {
   constructor(context: vscode.ExtensionContext) {}
@@ -100,11 +101,9 @@ export class DefaultDB extends DB {
   async getTodaysWork(): Promise<string> {
     const now = dayjs();
     const startOfToday = now.startOf("day");
-    const selectResult = await this.getRows(startOfToday, now);
-    const total = selectResult.reduce(
-      (acc, row) => acc + (row.working ? row.interval_minutes : 0),
-      0
-    );
+    const intervals = await this.getRows(startOfToday, now);
+
+    const total = dateSetLength(intervals);
 
     return minutesToString(total);
   }

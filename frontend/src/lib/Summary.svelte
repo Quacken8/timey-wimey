@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SummaryData } from "@extension/src/ui/parseToString";
+  import type { SummaryData } from "@extension/src/ui/parseForUI";
 
   export let summaryData: Promise<SummaryData> = new Promise(() => {});
   export let topFilesData: Promise<Record<string, number>> = new Promise(
@@ -10,15 +10,16 @@
   let topFiles: Record<string, number>;
   let error: Error | undefined;
 
-  $: Promise.all([summaryData, topFilesData])
-    .then(([summaryRes, topFilesRes]) => {
-      summary = summaryRes;
-      topFiles = topFilesRes;
-      error = undefined;
-    })
-    .catch((err) => {
-      error = err;
-    });
+  $: if (summaryData && topFilesData)
+    Promise.all([summaryData, topFilesData])
+      .then(([summaryRes, topFilesRes]) => {
+        summary = summaryRes;
+        topFiles = topFilesRes;
+        error = undefined;
+      })
+      .catch((err) => {
+        error = err;
+      });
 
   function toHoursMinutes(minutes: number) {
     const hours = Math.floor(minutes / 60);
@@ -30,7 +31,7 @@
 <div class="container">
   <h1>Timey-wimey data!</h1>
   {#if error}
-    <p>Error: {error.message}</p>
+    <p>Error: {error}</p>
   {:else}
     {#if summary}
       <h2>Summary</h2>

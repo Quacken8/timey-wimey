@@ -5,7 +5,7 @@ import type {
   TopFilesQuery,
   WorkspacesQuery,
 } from "@extension/src/ui/backend";
-import type { SummaryData } from "@extension/src/ui/parseToString";
+import type { SummaryData } from "@extension/src/ui/parseForUI";
 
 let vscode = acquireVsCodeApi();
 

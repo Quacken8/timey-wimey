@@ -5,50 +5,28 @@ dayjs.extend(isBetween);
 dayjs.extend(minMax);
 /// Returns total non-overlapping length of set of dayjs intervals in minutes
 export function dateSetLength(
-  intervals: { from: dayjs.Dayjs; to: dayjs.Dayjs }[]
+  timeEntries: { timestamp: Date; interval_minutes: number }[]
 ): number {
-  let nonOverlapping: Set<{ from: dayjs.Dayjs; to: dayjs.Dayjs }> = new Set();
+  const intervals = timeEntries
+    .map((row) => ({
+      from: dayjs(row.timestamp).subtract(row.interval_minutes, "minutes"),
+      to: dayjs(row.timestamp),
+    }))
+    .sort((a, b) => a.from.diff(b.from));
 
-  for (const interval of intervals) {
-    if (Array.from(nonOverlapping).some((i) => fullyContained(interval, i)))
-      continue;
-
-    const overlapping = Array.from(nonOverlapping).filter((i) =>
-      doOverlap(interval, i)
-    );
-    if (overlapping.length === 0) nonOverlapping.add(interval);
-    else {
-      overlapping.forEach((i) => nonOverlapping.delete(i));
-
-      const newInterval = {
-        from: dayjs.min([interval.from, ...overlapping.map((i) => i.from)])!,
-        to: dayjs.max([interval.to, ...overlapping.map((i) => i.to)])!,
+  let merged: { from: dayjs.Dayjs; to: dayjs.Dayjs }[] = [intervals[0]];
+  for (const interval of intervals.slice(1)) {
+    const lastInMerged = merged.at(-1)!;
+    if (!lastInMerged.to.isAfter(interval.from)) merged.push(interval);
+    else
+      merged[merged.length - 1] = {
+        from: dayjs.min(lastInMerged.from, interval.from)!,
+        to: dayjs.max(lastInMerged.to, interval.to)!,
       };
-      nonOverlapping.add(newInterval);
-    }
   }
 
-  return Array.from(nonOverlapping).reduce(
-    (acc, i) => acc + i.to.diff(i.from, "minute"),
+  return merged.reduce(
+    (prev, curr) => prev + curr.to.diff(curr.from, "minutes"),
     0
   );
-}
-
-function doOverlap(
-  a: { from: dayjs.Dayjs; to: dayjs.Dayjs },
-  b: { from: dayjs.Dayjs; to: dayjs.Dayjs }
-): boolean {
-  return (
-    fullyContained(a, b) ||
-    a.from.isBetween(b.from, b.to) ||
-    a.to.isBetween(b.from, b.to)
-  );
-}
-
-/// Returns true if a is fully contained in b
-function fullyContained(
-  a: { from: dayjs.Dayjs; to: dayjs.Dayjs },
-  b: { from: dayjs.Dayjs; to: dayjs.Dayjs }
-): boolean {
-  return b.from.isBefore(a.from) && b.to.isAfter(a.to);
 }
