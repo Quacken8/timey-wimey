@@ -16,7 +16,7 @@ export const subscribeStatusBar = async (
   statusBarItem.text = await db.getTodaysWork();
   statusBarItem.tooltip = "Today's working time";
   // statusBarItem.command = "timeyWimey.showStats";
-  statusBarItem.command = "timeyWimey.openWebView";
+  statusBarItem.command = "timeyWimey.showStats";
   statusBarItem.show();
 
   subscribe(statusBarItem, context);
@@ -36,7 +36,7 @@ export const subscribeStatusBar = async (
   );
 
   subscribe(
-    vscode.commands.registerCommand("timeyWimey.openWebView", () =>
+    vscode.commands.registerCommand("timeyWimey.showStats", () =>
       webviewCallback(context)
     ),
     context

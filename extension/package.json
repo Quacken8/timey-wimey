@@ -28,16 +28,12 @@
   "contributes": {
     "commands": [
       {
-        "command": "timeyWimey.showStats",
-        "title": "Timey Wimey: Show recent working stats"
-      },
-      {
         "command": "timeyWimey.openDB",
         "title": "Timey Wimey: Open the database"
       },
       {
-        "command": "timeyWimey.openWebView",
-        "title": "Timey Wimey: Open Webview"
+        "command": "timeyWimey.showStats",
+        "title": "Timey Wimey: Show interactive statistics of your work"
       }
     ],
     "configuration": {
