@@ -6,8 +6,8 @@ import type {
   TopFilesQuery,
   WorkspacesQuery,
 } from "@extension/src/ui/backend";
+import type { HistogramData } from "@extension/src/ui/histogramBinner";
 import type { SummaryData } from "@extension/src/ui/parseForUI";
-import type { HistogramData, Time } from "lightweight-charts";
 
 let vscode = acquireVsCodeApi();
 
@@ -91,7 +91,7 @@ export function getHistogramData(
   from: Date,
   to: Date,
   workspaces: string[]
-): Promise<HistogramData<Time>[]> {
+): Promise<HistogramData> {
   return new Promise((resolve, reject) => {
     const message: Omit<HistogramQuery, "address"> = {
       type: "histogram",

@@ -99,7 +99,7 @@ export function registerApiReplies(
     const address = message.address;
     match(message.type)
       .with("fullData", async () => {
-        const { workspaces, from, to } = message as any;
+        const { workspaces, from, to } = message as FullDataQuery;
         const content = await db.getRows(dayjs(from), dayjs(to), workspaces);
         sendToWebview({
           address,
@@ -115,7 +115,7 @@ export function registerApiReplies(
         });
       })
       .with("summary", async () => {
-        const { workspaces, from, to } = message as any;
+        const { workspaces, from, to } = message as SummaryQuery;
         const rows = await db.getRows(dayjs(from), dayjs(to), workspaces);
         const content = summarize(rows);
         sendToWebview({
@@ -124,7 +124,7 @@ export function registerApiReplies(
         });
       })
       .with("topFiles", async () => {
-        const { workspaces, from, to, number } = message as any;
+        const { workspaces, from, to, number } = message as TopFilesQuery;
         const rows = await db.getRows(dayjs(from), dayjs(to), workspaces);
         const content = getMostUsedFiles(rows, number);
         sendToWebview({
@@ -133,9 +133,9 @@ export function registerApiReplies(
         });
       })
       .with("histogram", async () => {
-        const { workspaces, from, to } = message as any;
+        const { workspaces, from, to } = message as HistogramQuery;
         const rows = await db.getRows(dayjs(from), dayjs(to), workspaces);
-        const content = binForHistogram(rows, from, to);
+        const content = binForHistogram(rows, dayjs(from), dayjs(to));
         sendToWebview({
           content,
           address,

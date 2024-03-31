@@ -28,26 +28,23 @@
   }
 </script>
 
-<div class="container">
-  <h1>Timey-wimey data!</h1>
-  {#if error}
-    <p>Error: {error}</p>
-  {:else}
-    {#if summary}
-      <h2>Summary</h2>
-      <div>Time worked: {toHoursMinutes(summary.workingMinutes)}</div>
-      <div>Time focused: {toHoursMinutes(summary.focusedMinutes)}</div>
-    {/if}
-
-    {#if topFiles}
-      <h2>Top files</h2>
-      <ul>
-        {#each Object.entries(topFiles) as [file, minutes]}
-          <li>
-            {toHoursMinutes(minutes)} — {file}
-          </li>
-        {/each}
-      </ul>
-    {/if}
+{#if error}
+  <p>Error: {error}</p>
+{:else}
+  {#if summary}
+    <h2>Summary</h2>
+    <div>Time worked: {toHoursMinutes(summary.workingMinutes)}</div>
+    <div>Time focused: {toHoursMinutes(summary.focusedMinutes)}</div>
   {/if}
-</div>
+
+  {#if topFiles}
+    <h2>Top files</h2>
+    <ul>
+      {#each Object.entries(topFiles) as [file, minutes]}
+        <li>
+          {toHoursMinutes(minutes)} — {file}
+        </li>
+      {/each}
+    </ul>
+  {/if}
+{/if}
