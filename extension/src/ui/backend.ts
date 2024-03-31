@@ -8,6 +8,7 @@ import {
   getMostUsedFiles,
   summarize as summarize,
 } from "./parseForUI";
+import { HistogramData, binForHistogram } from "./histogramBinner";
 
 export type FullDataAnswer = {
   address: number;
@@ -27,6 +28,11 @@ export type SummaryAnswer = {
 export type TopFilesAnswer = {
   address: number;
   content: Record<string, number>;
+};
+
+export type HistogramAnswer = {
+  address: number;
+  content: HistogramData;
 };
 
 export type FullDataQuery = {
@@ -59,17 +65,27 @@ export type TopFilesQuery = {
   number: number;
 };
 
+export type HistogramQuery = {
+  type: "histogram";
+  address: number;
+  from: Date;
+  to: Date;
+  workspaces: string[];
+};
+
 export type Query =
   | FullDataQuery
   | WorkspacesQuery
   | SummaryQuery
-  | TopFilesQuery;
+  | TopFilesQuery
+  | HistogramQuery;
 
 export type Answer =
   | FullDataAnswer
   | WorkspacesAnswer
   | SummaryAnswer
-  | TopFilesAnswer;
+  | TopFilesAnswer
+  | HistogramAnswer;
 
 export function registerApiReplies(
   panel: vscode.WebviewPanel,
@@ -111,6 +127,15 @@ export function registerApiReplies(
         const { workspaces, from, to, number } = message as any;
         const rows = await db.getRows(dayjs(from), dayjs(to), workspaces);
         const content = getMostUsedFiles(rows, number);
+        sendToWebview({
+          content,
+          address,
+        });
+      })
+      .with("histogram", async () => {
+        const { workspaces, from, to } = message as any;
+        const rows = await db.getRows(dayjs(from), dayjs(to), workspaces);
+        const content = binForHistogram(rows, from, to);
         sendToWebview({
           content,
           address,

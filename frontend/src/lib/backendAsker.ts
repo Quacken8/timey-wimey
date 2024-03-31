@@ -1,11 +1,13 @@
 import type {
   Answer,
+  HistogramQuery,
   Query,
   SummaryQuery,
   TopFilesQuery,
   WorkspacesQuery,
 } from "@extension/src/ui/backend";
 import type { SummaryData } from "@extension/src/ui/parseForUI";
+import type { HistogramData, Time } from "lightweight-charts";
 
 let vscode = acquireVsCodeApi();
 
@@ -81,6 +83,22 @@ export function getSummary(
 export function getWorkspaces(): Promise<string[]> {
   return new Promise((resolve, reject) => {
     const message: Omit<WorkspacesQuery, "address"> = { type: "workspaces" };
+    postMessage(message, resolve as any, reject);
+  });
+}
+
+export function getHistogramData(
+  from: Date,
+  to: Date,
+  workspaces: string[]
+): Promise<HistogramData<Time>[]> {
+  return new Promise((resolve, reject) => {
+    const message: Omit<HistogramQuery, "address"> = {
+      type: "histogram",
+      from,
+      to,
+      workspaces,
+    };
     postMessage(message, resolve as any, reject);
   });
 }
