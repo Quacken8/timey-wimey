@@ -7,6 +7,7 @@ dayjs.extend(minMax);
 export function dateSetLength(
   timeEntries: { timestamp: Date; interval_minutes: number }[]
 ): number {
+  if (timeEntries.length === 0) return 0;
   const intervals = timeEntries
     .map((row) => ({
       from: dayjs(row.timestamp).subtract(row.interval_minutes, "minutes"),

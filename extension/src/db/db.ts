@@ -101,7 +101,9 @@ export class DefaultDB extends DB {
   async getTodaysWork(): Promise<string> {
     const now = dayjs();
     const startOfToday = now.startOf("day");
-    const intervals = await this.getRows(startOfToday, now);
+    const intervals = (await this.getRows(startOfToday, now)).filter(
+      (row) => row.working || row.window_focused
+    );
 
     const total = dateSetLength(intervals);
 
