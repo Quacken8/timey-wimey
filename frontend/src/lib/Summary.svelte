@@ -33,8 +33,8 @@
 {:else}
   {#if summary}
     <h2>Summary</h2>
-    <div>Time worked: {toHoursMinutes(summary.workingMinutes)}</div>
-    <div>Time focused: {toHoursMinutes(summary.focusedMinutes)}</div>
+    <div>Time spent working: {toHoursMinutes(summary.focusedMinutes)}</div>
+    <div>Time spent writing: {toHoursMinutes(summary.workingMinutes)}</div>
   {/if}
 
   {#if topFiles}

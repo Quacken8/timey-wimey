@@ -15,7 +15,6 @@ export const subscribeStatusBar = async (
   );
   statusBarItem.text = await db.getTodaysWork();
   statusBarItem.tooltip = "Today's working time";
-  // statusBarItem.command = "timeyWimey.showStats";
   statusBarItem.command = "timeyWimey.showStats";
   statusBarItem.show();
 
@@ -26,19 +25,4 @@ export const subscribeStatusBar = async (
   if (started !== "started") {
     console.error("StatusBarUpdater failed to start", started);
   }
-
-  subscribe(
-    vscode.commands.registerCommand("timeyWimey.openDB", () => {
-      const filePath = vscode.Uri.file(db.getFilePath());
-      vscode.commands.executeCommand("vscode.open", filePath);
-    }),
-    context
-  );
-
-  subscribe(
-    vscode.commands.registerCommand("timeyWimey.showStats", () =>
-      webviewCallback(context)
-    ),
-    context
-  );
 };

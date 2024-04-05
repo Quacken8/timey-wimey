@@ -21,6 +21,7 @@ export function summarize(rows: DBRowSelect[]): SummaryData {
   return workData;
 }
 
+/// NOTE: filters out null files
 export function getMostUsedFiles(
   rows: DBRowSelect[],
   number: number
@@ -28,10 +29,11 @@ export function getMostUsedFiles(
   const fileIntervals: Record<string, DBRowSelect[]> = {};
   for (const row of rows) {
     if (!row.working) continue;
+    let filename = row.current_file;
+    if (filename === null) continue;
 
     const workspaceFileless = row.workspace?.replace("file://", "");
     const workspaceRoot = row.workspace?.split("/").at(-1);
-    let filename = row.current_file ?? "None";
     filename =
       workspaceFileless && filename.includes(workspaceFileless) // FIXME this is a hack that only works on my machine, study better how vscode api reports on open files in remote workspaces and other weird edge cases
         ? (workspaceRoot ?? "").concat(filename.replace(workspaceFileless, ""))

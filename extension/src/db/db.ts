@@ -173,6 +173,11 @@ export function getDB(context: vscode.ExtensionContext): DB {
     throw new Error("Not implemented");
   }
 
+  if (process.env.NODE_ENV === "development") {
+    return new DebuggingDB(context);
+  }
+  return new DebuggingDB(context);
+
   return new DefaultDB(context);
 }
 

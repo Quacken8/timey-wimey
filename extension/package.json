@@ -34,6 +34,10 @@
       {
         "command": "timeyWimey.showStats",
         "title": "Timey Wimey: Show interactive statistics of your work"
+      },
+      {
+        "command": "timeyWimey.insertEntry",
+        "title": "Timey Wimey: Insert a new custom working entry"
       }
     ],
     "configuration": {
@@ -47,7 +51,7 @@
         "timeyWimey.writeInterval": {
           "type": "number",
           "default": 5,
-          "description": "Interval in minutes to write to the database"
+          "description": "How often to write to the database in minutes"
         }
       }
     }

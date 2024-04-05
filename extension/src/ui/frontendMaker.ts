@@ -9,6 +9,18 @@ export const webviewCallback = async (context: vscode.ExtensionContext) => {
     vscode.ViewColumn.One, // Editor column to show the new webview panel in.
     { enableScripts: true } // Webview options. More on these later.
   );
+  // panel.iconPath = {
+  //   dark: vscode.Uri.joinPath(
+  //     context.extensionUri,
+  //     "assets",
+  //     "clock-melting-white.svg"
+  //   ),
+  //   light: vscode.Uri.joinPath(
+  //     context.extensionUri,
+  //     "assets",
+  //     "clock-melting.svg"
+  //   ),
+  // };
 
   registerApiReplies(panel, context);
   panel.webview.html = await getWebviewContent(context);
