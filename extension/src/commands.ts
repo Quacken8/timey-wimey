@@ -151,4 +151,6 @@ async function enterLine(db: DB) {
   ];
 
   await db.insert(entries as any);
+
+  vscode.window.showInformationMessage("Entry inserted");
 }

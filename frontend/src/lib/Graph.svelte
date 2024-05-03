@@ -21,7 +21,6 @@
 
   let data: Promise<HistogramData> = new Promise(() => {});
   let workingData: GayAssHistogramData<Time>[] = [];
-  let focusedData: GayAssHistogramData<Time>[] = [];
 
   $: data, updateData();
   const updateData = async () => {
@@ -30,10 +29,6 @@
         workingData = data.map((d) => ({
           time: utc(d.time),
           value: d.workingMinutes / 60,
-        }));
-        focusedData = data.map((d) => ({
-          time: utc(d.time),
-          value: d.focusedMinutes / 60,
         }));
       }
     });
@@ -50,6 +45,7 @@
 
   let timescale: ITimeScaleApi<Time> | null;
   $: if (timescale && selectedRange) {
+    console.log(selectedRange);
     timescale.setVisibleRange({
       from: selectedRange.from.unix() as Time,
       to: selectedRange.to.unix() as Time,
@@ -60,9 +56,8 @@
 </script>
 
 <h2>Graph</h2>
-{#if focusedData.length > 0 && workingData.length > 0}
+{#if workingData.length > 0}
   <Chart height={600} width={width * 0.9} ref={(ref) => (chart = ref)}>
-    <HistogramSeries title="Focused" data={focusedData} reactive color="red" />
     <HistogramSeries title="Working" data={workingData} reactive color="blue" />
     <TimeScale ref={(ref) => (timescale = ref)} barSpacing={10} />
     <PriceScale id="hours" />

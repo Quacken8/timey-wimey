@@ -67,7 +67,7 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "jest",
-    "rebuild-sqlite": "pnpm electron-rebuild -f -w better-sqlite3 -v 27.2.3",
+    "rebuild-sqlite": "pnpm electron-rebuild -f -w better-sqlite3 -v 28.2.8",
     "migrate": "tsx .drizzle/migrator.ts",
     "build-frontend": "cd ../frontend && pnpm build && cd ../extension"
   },
