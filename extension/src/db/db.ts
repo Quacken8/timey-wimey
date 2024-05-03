@@ -43,6 +43,7 @@ export class DefaultDB extends DB {
   }
 
   doMigrate(pathToMigrations: string) {
+    vscode.workspace.fs.createDirectory(vscode.Uri.file(this.getFolderPath()));
     const pathToDB = this.getFilePath();
     const betterSqlite = new Database(pathToDB);
     const db = drizzle(betterSqlite);
@@ -172,6 +173,11 @@ export function getDB(context: vscode.ExtensionContext): DB {
   if (userProvided) {
     throw new Error("Not implemented");
   }
+
+  if (process.env.NODE_ENV === "development") {
+    return new DebuggingDB(context);
+  }
+  //return new DebuggingDB(context);
 
   return new DefaultDB(context);
 }

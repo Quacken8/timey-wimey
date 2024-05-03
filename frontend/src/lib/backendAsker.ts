@@ -1,10 +1,12 @@
 import type {
   Answer,
+  HistogramQuery,
   Query,
   SummaryQuery,
   TopFilesQuery,
   WorkspacesQuery,
 } from "@extension/src/ui/backend";
+import type { HistogramData } from "@extension/src/ui/histogramBinner";
 import type { SummaryData } from "@extension/src/ui/parseForUI";
 
 let vscode = acquireVsCodeApi();
@@ -81,6 +83,22 @@ export function getSummary(
 export function getWorkspaces(): Promise<string[]> {
   return new Promise((resolve, reject) => {
     const message: Omit<WorkspacesQuery, "address"> = { type: "workspaces" };
+    postMessage(message, resolve as any, reject);
+  });
+}
+
+export function getHistogramData(
+  from: Date,
+  to: Date,
+  workspaces: string[]
+): Promise<HistogramData> {
+  return new Promise((resolve, reject) => {
+    const message: Omit<HistogramQuery, "address"> = {
+      type: "histogram",
+      from,
+      to,
+      workspaces,
+    };
     postMessage(message, resolve as any, reject);
   });
 }
