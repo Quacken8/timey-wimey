@@ -8,7 +8,7 @@ export const subscribeStatusBar = async (
   updater: StatusBarUpdater,
   context: vscode.ExtensionContext
 ) => {
-  const db = getDB(context);
+  const db = await getDB(context);
   const statusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
     100

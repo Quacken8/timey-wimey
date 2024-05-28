@@ -13,8 +13,8 @@ import { webviewCallback } from "./ui/frontendMaker";
 import { subscribe } from "./utils";
 import * as vscode from "vscode";
 
-export function registerCommands(context: vscode.ExtensionContext) {
-  const db = getDB(context);
+export async function registerCommands(context: vscode.ExtensionContext) {
+  const db = await getDB(context);
 
   subscribe(
     vscode.commands.registerCommand("timeyWimey.openDB", () => {

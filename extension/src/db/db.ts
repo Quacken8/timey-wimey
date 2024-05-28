@@ -1,7 +1,6 @@
 import { CheckerOutput } from "../types";
-import { DBRowSelect } from "./schema";
+import { DBRowSelect, migrationQuery, parseForDB, tableCols } from "./schema";
 import dayjs from "dayjs";
-import path from "path";
 import * as vscode from "vscode";
 import { minutesToString } from "../ui/parseForUI";
 import { dateSetLength } from "../ui/dateSetLength";
@@ -34,11 +33,18 @@ export class DebuggingDB {
   }
 
   getFolderPath() {
-    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db").fsPath;
+    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db")
+      .toString()
+      .replace(/^file:\/\//, "");
   }
 
   getFilePath() {
-    return path.join(this.getFolderPath(), "db.sqlite");
+    return vscode.Uri.joinPath(
+      vscode.Uri.parse(this.getFolderPath()),
+      "db.sqlite"
+    )
+      .toString()
+      .replace(/^file:\/\//, "");
   }
 
   async insert(row: Promise<CheckerOutput>[]) {
@@ -66,11 +72,13 @@ export class DebuggingDB {
   }
 }
 
-export function getDB(context: vscode.ExtensionContext): DB {
+export async function getDB(context: vscode.ExtensionContext): Promise<DB> {
   if (process.env.NODE_ENV === "development") {
     return new DebuggingDB(context);
   }
-  return new NativeDB(context);
+  const db = new NativeDB(context);
+  await db.doMigrate();
+  return db;
 }
 
 export const reduceToPerRepo = (rows: DBRowSelect[]) =>
@@ -104,7 +112,9 @@ async function executeSQLiteCommand({
   const raw = await promisedExec(
     `sqlite3 ${sqliteCommands
       .map((c) => `-cmd \"${c}\"`)
-      .join(" ")} \"${dbFileUri}\" \"${query}\"`
+      .join(" ")} ${vscode.Uri.parse(dbFileUri)
+      .toString()
+      .replace(/^file:\/\//, "")} \"${query}\"`
   );
   if (raw.stderr) throw new Error("Sqlite error");
   return raw.stdout;
@@ -145,11 +155,19 @@ class NativeDB extends DB {
   }
 
   getFolderPath() {
-    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db").fsPath;
+    return "/home/quacken/testino"; // FIXME debug
+    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db")
+      .toString()
+      .replace(/^file:\/\//, "");
   }
 
   getFilePath() {
-    return path.join(this.getFolderPath(), "db.sqlite");
+    return vscode.Uri.joinPath(
+      vscode.Uri.parse(this.getFolderPath()),
+      "db.sqlite"
+    )
+      .toString()
+      .replace(/^file:\/\//, "");
   }
   async getTodaysWork(): Promise<string> {
     const now = dayjs();
@@ -210,7 +228,7 @@ class NativeDB extends DB {
       const s = row.split(stdOutSeparator);
       return {
         id: Number(s[0]),
-        timestamp: new Date(Number(s[1]) * 1000),
+        date: new Date(Number(s[1]) * 1000),
         interval_minutes: Number(s[2]),
         working: Boolean(Number(s[3])),
         window_focused: Boolean(Number(s[4])),
@@ -222,18 +240,36 @@ class NativeDB extends DB {
     });
   }
 
-  async insert() {
-    console.log("no we dont");
+  async insert(row: Promise<CheckerOutput>[]) {
+    const resolved = parseForDB(await Promise.all(row));
+    const colsWithoutId = tableCols.filter((c) => c !== "id") as Exclude<
+      (typeof tableCols)[number],
+      "id"
+    >[];
+    const sqliteCommands = [".parameter init"];
+    sqliteCommands.push(
+      ...colsWithoutId.map((c) => `.parameter set :${c} '${resolved[c]}'`)
+    );
+    const query = `INSERT INTO entries (${colsWithoutId.join(
+      ", "
+    )}) VALUES (${colsWithoutId.map((c) => `:${c}`).join(", ")})`;
+
+    executeSQLiteCommand({
+      dbFileUri: this.getFilePath(),
+      sqliteCommands,
+      query,
+    });
   }
 
-  doMigrate(pathToMigrations: string) {
-    console.log("no we dont");
-    // vscode.workspace.fs.createDirectory(vscode.Uri.file(this.getFolderPath()));
-    // const pathToDB = this.getFilePath();
-    // const betterSqlite = new Database(pathToDB);
-    // const db = drizzle(betterSqlite);
-    // migrate(db, { migrationsFolder: pathToMigrations });
-    //
-    // betterSqlite.close();
+  async doMigrate() {
+    await vscode.workspace.fs.createDirectory(
+      vscode.Uri.parse(this.getFolderPath())
+    );
+    const query = migrationQuery;
+    await executeSQLiteCommand({
+      dbFileUri: this.getFilePath(),
+      sqliteCommands: [],
+      query,
+    });
   }
 }

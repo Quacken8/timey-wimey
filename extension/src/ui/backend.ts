@@ -95,7 +95,7 @@ export function registerApiReplies(
     panel.webview.postMessage(message);
   };
   panel.webview.onDidReceiveMessage(async (message: Query) => {
-    const db = getDB(context);
+    const db = await getDB(context);
     const address = message.address;
     match(message.type)
       .with("fullData", async () => {

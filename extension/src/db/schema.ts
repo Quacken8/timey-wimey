@@ -2,18 +2,23 @@ import { match, P } from "ts-pattern";
 import { CheckerOutput } from "../types";
 
 export type DBRowInsert = {
-  timestamp: number;
+  date: number;
   interval_minutes: number;
   working: boolean;
   window_focused: boolean;
   workspace: string | null;
   current_file: string | null;
   last_commit_hash: string | null;
-  custom: any;
+  custom: string;
 };
+
+export const migrationQuery = <const>(
+  `CREATE TABLE IF NOT EXISTS 'entries' ('id' integer PRIMARY KEY AUTOINCREMENT NOT NULL, 'date' integer NOT NULL, 'interval_minutes' real NOT NULL, 'working' integer NOT NULL, 'window_focused' integer NOT NULL,	'workspace' text,	'current_file' text,	'last_commit_hash' text, 'custom' text)`
+);
+
 export type DBRowSelect = {
   id: number;
-  timestamp: Date;
+  date: Date;
   interval_minutes: number;
   working: boolean;
   window_focused: boolean;
@@ -22,9 +27,9 @@ export type DBRowSelect = {
   last_commit_hash: string | null;
   custom: any;
 };
-export const tableCols = [
+export const tableCols = <const>[
   "id",
-  "timestamp",
+  "date",
   "interval_minutes",
   "working",
   "window_focused",
@@ -38,7 +43,7 @@ export function parseForDB(row: CheckerOutput[]): DBRowInsert {
   for (const entry of row) {
     match(entry)
       .with({ key: "timestamp" }, (e) => {
-        parsedRow.timestamp = e.value.unix();
+        parsedRow.date = e.value.unix();
       })
       .with({ key: "workspace" }, (e) => {
         parsedRow.workspace = e.value?.toString();
@@ -65,7 +70,7 @@ export function parseForDB(row: CheckerOutput[]): DBRowInsert {
   }
 
   if (
-    Object.keys(tableCols).every(
+    tableCols.every(
       (key) => (key === "id") !== parsedRow.hasOwnProperty(key) // what a weird way to xor
     )
   ) {

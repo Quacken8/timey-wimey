@@ -5,13 +5,13 @@ dayjs.extend(isBetween);
 dayjs.extend(minMax);
 /// Returns total non-overlapping length of set of dayjs intervals in minutes
 export function dateSetLength(
-  timeEntries: { timestamp: Date; interval_minutes: number }[]
+  timeEntries: { date: Date; interval_minutes: number }[]
 ): number {
   if (timeEntries.length === 0) return 0;
   const intervals = timeEntries
     .map((row) => ({
-      from: dayjs(row.timestamp).subtract(row.interval_minutes, "minutes"),
-      to: dayjs(row.timestamp),
+      from: dayjs(row.date).subtract(row.interval_minutes, "minutes"),
+      to: dayjs(row.date),
     }))
     .sort((a, b) => a.from.diff(b.from));
 
