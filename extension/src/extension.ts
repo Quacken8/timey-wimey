@@ -8,7 +8,6 @@ import { registerCommands } from "./commands";
 const repeatingSaver = new RepeatingSaver();
 const statusBarUpdater = new StatusBarUpdater();
 export async function activate(context: vscode.ExtensionContext) {
-  console.log("sfd");
   debugLog("extension is in development mode");
   setTimerSettingsAndSubscribe(repeatingSaver, context);
   registerCommands(context);

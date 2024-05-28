@@ -1,31 +1,44 @@
 import { match, P } from "ts-pattern";
 import { CheckerOutput } from "../types";
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { getTableColumns } from "drizzle-orm";
 
-export const entries = sqliteTable("entries", {
-  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  timestamp: integer("date", { mode: "timestamp" }).notNull(),
-  interval_minutes: real("interval_minutes").notNull(),
-  working: integer("working", { mode: "boolean" }).notNull(),
-  window_focused: integer("window_focused", { mode: "boolean" }).notNull(),
-  workspace: text("workspace"),
-  current_file: text("current_file"),
-  last_commit_hash: text("last_commit_hash"),
-  custom: text("custom", { mode: "json" }),
-});
-
-export const tableCols = getTableColumns(entries);
-
-export type DBRowInsert = Omit<typeof entries.$inferInsert, "id">;
-export type DBRowSelect = typeof entries.$inferSelect;
+export type DBRowInsert = {
+  timestamp: number;
+  interval_minutes: number;
+  working: boolean;
+  window_focused: boolean;
+  workspace: string | null;
+  current_file: string | null;
+  last_commit_hash: string | null;
+  custom: any;
+};
+export type DBRowSelect = {
+  id: number;
+  timestamp: Date;
+  interval_minutes: number;
+  working: boolean;
+  window_focused: boolean;
+  workspace: string | null;
+  current_file: string | null;
+  last_commit_hash: string | null;
+  custom: any;
+};
+export const tableCols = [
+  "id",
+  "timestamp",
+  "interval_minutes",
+  "working",
+  "window_focused",
+  "workspace",
+  "current_file",
+  "last_commit_hash",
+];
 
 export function parseForDB(row: CheckerOutput[]): DBRowInsert {
   let parsedRow: Partial<DBRowInsert> = {};
   for (const entry of row) {
     match(entry)
       .with({ key: "timestamp" }, (e) => {
-        parsedRow.timestamp = e.value.toDate();
+        parsedRow.timestamp = e.value.unix();
       })
       .with({ key: "workspace" }, (e) => {
         parsedRow.workspace = e.value?.toString();

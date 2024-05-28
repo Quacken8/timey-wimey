@@ -1,15 +1,11 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { CheckerOutput, PromiseType } from "../types";
-import { DBRowSelect, entries, parseForDB } from "./schema";
+import { CheckerOutput } from "../types";
+import { DBRowSelect } from "./schema";
 import dayjs from "dayjs";
-import { between, and, inArray, max, desc } from "drizzle-orm";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import path from "path";
 import * as vscode from "vscode";
 import { minutesToString } from "../ui/parseForUI";
 import { dateSetLength } from "../ui/dateSetLength";
-import { exec } from "child_process";
+import { exec, execSync } from "child_process";
 import { promisify } from "util";
 const promisedExec = promisify(exec);
 
@@ -26,106 +22,6 @@ export abstract class DB {
   ): Promise<DBRowSelect[]>;
   abstract getTodaysWork(): Promise<string>;
   abstract getWorkspaces(): Promise<string[]>;
-}
-
-export class DefaultDB extends DB {
-  #db: ReturnType<typeof drizzle>;
-  #context: vscode.ExtensionContext;
-
-  constructor(context: vscode.ExtensionContext) {
-    super(context);
-    this.#context = context;
-    const migrationsFolder = path.join(
-      context.extensionPath,
-      ".drizzle/migrations"
-    );
-    this.doMigrate(migrationsFolder);
-    const filePath = this.getFilePath();
-    const betterSqlite = new Database(filePath);
-    this.#db = drizzle(betterSqlite);
-  }
-
-  doMigrate(pathToMigrations: string) {
-    vscode.workspace.fs.createDirectory(vscode.Uri.file(this.getFolderPath()));
-    const pathToDB = this.getFilePath();
-    const betterSqlite = new Database(pathToDB);
-    const db = drizzle(betterSqlite);
-    migrate(db, { migrationsFolder: pathToMigrations });
-
-    betterSqlite.close();
-  }
-
-  getFolderPath() {
-    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db").fsPath;
-  }
-
-  getFilePath() {
-    return path.join(this.getFolderPath(), "db.sqlite"); // FIXME get this from settings?
-  }
-
-  async insert(row: Promise<CheckerOutput>[]) {
-    const resolved = parseForDB(await Promise.all(row));
-    if (
-      process.env.NODE_ENV === "development" &&
-      (resolved.working || resolved.window_focused)
-    ) {
-      console.log("Inserting", resolved);
-      return;
-    }
-    if (resolved.working || resolved.window_focused)
-      this.#db.insert(entries).values(resolved).run();
-  }
-
-  getRows(
-    from: dayjs.Dayjs,
-    to: dayjs.Dayjs,
-    workspaces?: string[]
-  ): Promise<DBRowSelect[]> {
-    if (workspaces !== undefined) {
-      if (workspaces.length === 0) {
-        return Promise.resolve([]);
-      }
-      return this.#db
-        .select()
-        .from(entries)
-        .where(
-          and(
-            between(entries.timestamp, from.toDate(), to.toDate()),
-            inArray(entries.workspace, workspaces)
-          )
-        );
-    } else {
-      return this.#db
-        .select()
-        .from(entries)
-        .where(between(entries.timestamp, from.toDate(), to.toDate()));
-    }
-  }
-
-  async getTodaysWork(): Promise<string> {
-    const now = dayjs();
-    const startOfToday = now.startOf("day");
-    const intervals = (await this.getRows(startOfToday, now)).filter(
-      (row) => row.working || row.window_focused
-    );
-
-    const total = dateSetLength(intervals);
-
-    return minutesToString(total);
-  }
-
-  async getWorkspaces() {
-    return (
-      await this.#db
-        .selectDistinct({
-          workspace: entries.workspace,
-          latestTimestamp: max(entries.timestamp),
-        })
-        .from(entries)
-        .groupBy(entries.workspace)
-        .orderBy(desc(entries.timestamp))
-    ).map((row) => (row.workspace === null ? "no workspace" : row.workspace));
-  }
 }
 
 /// used when variable "NODE_ENV" is "development"
@@ -171,18 +67,10 @@ export class DebuggingDB {
 }
 
 export function getDB(context: vscode.ExtensionContext): DB {
-  const userProvided = false;
-
-  if (userProvided) {
-    throw new Error("Not implemented");
-  }
-
   if (process.env.NODE_ENV === "development") {
     return new DebuggingDB(context);
   }
-  //return new DebuggingDB(context);
   return new NativeDB(context);
-  return new DefaultDB(context);
 }
 
 export const reduceToPerRepo = (rows: DBRowSelect[]) =>
@@ -202,30 +90,39 @@ function escape(s: string): string {
   return [...s].map((ch) => (ch in dangerChars ? `\\${ch}` : ch)).join("");
 }
 
+/// just something so fucked up it's likely it won't appear in any filename
 const stdOutSeparator = "][Đđ[đ";
 async function executeSQLiteCommand({
   dbFileUri,
-  command,
+  sqliteCommands,
+  query,
 }: {
   dbFileUri: string;
-  command: string;
+  sqliteCommands: string[];
+  query: string;
 }): Promise<string> {
-  console.log(`echo "${command}" | sqlite3 ${dbFileUri}`);
-  const raw = await promisedExec(`echo "${command}" | sqlite3 ${dbFileUri}`);
+  const raw = await promisedExec(
+    `sqlite3 ${sqliteCommands
+      .map((c) => `-cmd \"${c}\"`)
+      .join(" ")} \"${dbFileUri}\" \"${query}\"`
+  );
   if (raw.stderr) throw new Error("Sqlite error");
   return raw.stdout;
 }
 
-/** DB that actually uses the sqlite that is availible on the machine
+/** DB that actually uses the sqlite3 that is availible on the machine
  */
 class NativeDB extends DB {
   #context: vscode.ExtensionContext;
   constructor(context: vscode.ExtensionContext) {
     // check sqlite is here
-    exec("sqlite3 --version", (err, stdout, stderr) => {
-      if (err !== null || stderr !== "")
-        throw new Error("Timey error: sqlite3 not accesible");
-    });
+    try {
+      execSync("sqlite3 --version");
+    } catch (err) {
+      throw new Error(
+        "sqlite3 command not availible on the machine! You can install it here: https://www.sqlite.org/download.html. Don't forget to put it in PATH"
+      );
+    }
 
     super(context);
     this.#context = context;
@@ -233,10 +130,10 @@ class NativeDB extends DB {
   async getWorkspaces() {
     const rawOut = await executeSQLiteCommand({
       dbFileUri: this.getFilePath(),
-      command:
+      sqliteCommands: [],
+      query:
         "SELECT workspace FROM entries GROUP BY workspace ORDER BY MAX(date) DESC;",
     });
-    console.log("workpsaces", rawOut);
     const res = rawOut
       .split("\n")
       .map((row) =>
@@ -272,48 +169,51 @@ class NativeDB extends DB {
     workspaces?: string[]
   ): Promise<DBRowSelect[]> {
     let rawOut;
-    let commandStart = `.separator '${stdOutSeparator}'
-.parameter init
-.parameter set :from '${from.unix()}'
-.parameter set :to '${to.unix()}'`;
+    const sqliteCommands = [
+      `.separator '${stdOutSeparator}'`,
+      `.parameter init`,
+      `.parameter set :from '${from.unix()}'`,
+      `.parameter set :to '${to.unix()}'`,
+    ];
     if (workspaces !== undefined) {
       if (workspaces.length === 0) {
         return Promise.resolve([]);
       }
+      sqliteCommands.push(
+        ...workspaces.map((workspace, i) => {
+          const name =
+            workspace === "no workspace" ? "NULL" : `'${escape(workspace)}'`;
+          return `.parameter set :workspace${i} ${name}`;
+        })
+      );
+      const query = `SELECT * FROM entries WHERE date BETWEEN :from AND :to AND workspace IN (${Array.from(
+        { length: workspaces.length },
+        (_, i) => `:workspace${i}`
+      ).join(",")})`;
       rawOut = await executeSQLiteCommand({
         dbFileUri: this.getFilePath(),
-        command: `${commandStart}
-${workspaces
-  .map((workspace, i) => {
-    const name =
-      workspace === "no workspace" ? "NULL" : `'${escape(workspace)}'`;
-    return `.parameter set :workspace${i} ${name}`;
-  })
-  .join("\n")}
-SELECT * FROM entries WHERE date BETWEEN :from AND :to AND workspace IN (${Array.from(
-          { length: workspaces.length },
-          (_, i) => `:workspace${i}`
-        ).join(",")})`,
+        sqliteCommands,
+        query,
       });
     } else {
+      const query = "SELECT * FROM entries WHERE date BETWEEN :from AND :to";
       rawOut = await executeSQLiteCommand({
         dbFileUri: this.getFilePath(),
-        command: `${commandStart}
-SELECT * FROM entries WHERE date BETWEEN :from AND :to`,
+        sqliteCommands,
+        query,
       });
     }
     const possiblyNull: (x: string) => null | string = (x: string) =>
       x === "" ? null : x;
-    console.log("getRows", rawOut);
     if (rawOut === "") return [];
     return rawOut.split("\n").map((row) => {
       const s = row.split(stdOutSeparator);
       return {
         id: Number(s[0]),
-        timestamp: new Date(Number(s[1])),
+        timestamp: new Date(Number(s[1]) * 1000),
         interval_minutes: Number(s[2]),
-        working: Boolean(s[3]),
-        window_focused: Boolean(s[4]),
+        working: Boolean(Number(s[3])),
+        window_focused: Boolean(Number(s[4])),
         workspace: s[5],
         current_file: possiblyNull(s[6]),
         last_commit_hash: possiblyNull(s[7]),
