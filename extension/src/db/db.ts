@@ -76,8 +76,13 @@ export async function getDB(context: vscode.ExtensionContext): Promise<DB> {
   if (process.env.NODE_ENV === "development") {
     return new DebuggingDB(context);
   }
-  const db = new NativeDB(context);
-  await db.doMigrate();
+
+  let db: NativeDB | undefined = context.globalState.get("timeyWimeyDB");
+  if (!db) {
+    db = new NativeDB(context);
+    context.globalState.update("timeyWimeyDB", db);
+    await db.doMigrate();
+  }
   return db;
 }
 
