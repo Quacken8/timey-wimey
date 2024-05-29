@@ -24,10 +24,7 @@ export function setTimerSettingsAndSubscribe(
     const customChecker: Checker = async () => {
       return {
         key: "custom",
-        value: {
-          imJustAFool: "hell ye",
-          nombre: 4,
-        },
+        value: null,
       };
     };
     repeatingSaver.checkers = [

@@ -33,18 +33,14 @@ export class DebuggingDB {
   }
 
   getFolderPath() {
-    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db")
-      .toString()
-      .replace(/^file:\/\//, "");
+    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db").fsPath;
   }
 
   getFilePath() {
     return vscode.Uri.joinPath(
       vscode.Uri.parse(this.getFolderPath()),
       "db.sqlite"
-    )
-      .toString()
-      .replace(/^file:\/\//, "");
+    ).fsPath;
   }
 
   async insert(row: Promise<CheckerOutput>[]) {
@@ -76,14 +72,7 @@ export async function getDB(context: vscode.ExtensionContext): Promise<DB> {
   if (process.env.NODE_ENV === "development") {
     return new DebuggingDB(context);
   }
-
-  let db: NativeDB | undefined = context.globalState.get("timeyWimeyDB");
-  if (!db) {
-    db = new NativeDB(context);
-    context.globalState.update("timeyWimeyDB", db);
-    await db.doMigrate();
-  }
-  return db;
+  return new NativeDB(context);
 }
 
 export const reduceToPerRepo = (rows: DBRowSelect[]) =>
@@ -115,11 +104,9 @@ async function executeSQLiteCommand({
   query: string;
 }): Promise<string> {
   const raw = await promisedExec(
-    `sqlite3 ${sqliteCommands
-      .map((c) => `-cmd \"${c}\"`)
-      .join(" ")} ${vscode.Uri.parse(dbFileUri)
-      .toString()
-      .replace(/^file:\/\//, "")} \"${query}\"`
+    `sqlite3 ${sqliteCommands.map((c) => `-cmd \"${c}\"`).join(" ")} \"${
+      vscode.Uri.parse(dbFileUri).fsPath
+    }\" \"${query}\"`
   );
   if (raw.stderr) throw new Error("Sqlite error");
   return raw.stdout;
@@ -160,19 +147,14 @@ class NativeDB extends DB {
   }
 
   getFolderPath() {
-    return "/home/quacken/testino"; // FIXME debug
-    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db")
-      .toString()
-      .replace(/^file:\/\//, "");
+    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db").fsPath;
   }
 
   getFilePath() {
     return vscode.Uri.joinPath(
       vscode.Uri.parse(this.getFolderPath()),
       "db.sqlite"
-    )
-      .toString()
-      .replace(/^file:\/\//, "");
+    ).fsPath;
   }
   async getTodaysWork(): Promise<string> {
     const now = dayjs();
