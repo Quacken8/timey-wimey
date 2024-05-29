@@ -10,3 +10,9 @@ vsc-extension-quickstart.md
 **/*.ts
 dist
 *.sqlite
+**/*.ts
+**/*.tsx
+**/node_modules
+**/test
+**/*.map
+.vscode
