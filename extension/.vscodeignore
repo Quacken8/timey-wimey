@@ -8,11 +8,11 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
-dist
 *.sqlite
 **/*.ts
 **/*.tsx
 **/node_modules
 **/test
 **/*.map
+out/**/*
 .vscode
