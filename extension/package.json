@@ -52,9 +52,13 @@
           "type": "number",
           "default": 5,
           "description": "How often to write to the database in minutes"
+        },
+        "timeyWimey.dbCommand": {
+          "type": "string",
+          "default": "sqlite3",
+          "description": "What command to use to talk to the database. For info on format refer to the extension README.md"
         }
-      }
-    }
+      }}
   },
   "scripts": {
     "vscode:prepublish": "npm run build-frontend && npm run esbuild-base -- --minify",

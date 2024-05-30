@@ -4,9 +4,7 @@ import dayjs from "dayjs";
 import * as vscode from "vscode";
 import { minutesToString } from "../ui/parseForUI";
 import { dateSetLength } from "../ui/dateSetLength";
-import { exec, execSync } from "child_process";
-import { promisify } from "util";
-const promisedExec = promisify(exec);
+import { spawn, execSync } from "child_process";
 
 export abstract class DB {
   constructor(context: vscode.ExtensionContext) {}
@@ -72,7 +70,10 @@ export async function getDB(context: vscode.ExtensionContext): Promise<DB> {
   if (process.env.NODE_ENV === "development") {
     return new DebuggingDB(context);
   }
-  return new NativeDB(context);
+  const sqliteInvoker =
+    vscode.workspace.getConfiguration("timeyWimey").get<string>("dbCommand") ??
+    "sqlite3";
+  return new NativeDB(context, sqliteInvoker);
 }
 
 export const reduceToPerRepo = (rows: DBRowSelect[]) =>
@@ -94,43 +95,69 @@ function escape(s: string): string {
 
 /// just something so fucked up it's likely it won't appear in any filename
 const stdOutSeparator = "][Đđ[đ";
-async function executeSQLiteCommand({
+
+function executeSQLiteCommand({
+  sqliteInvoker,
   dbFileUri,
   sqliteCommands,
   query,
 }: {
+  sqliteInvoker: string;
   dbFileUri: string;
   sqliteCommands: string[];
   query: string;
 }): Promise<string> {
-  const raw = await promisedExec(
-    `sqlite3 ${sqliteCommands.map((c) => `-cmd \"${c}\"`).join(" ")} \"${
-      vscode.Uri.parse(dbFileUri).fsPath
-    }\" \"${query}\"`
-  );
-  if (raw.stderr) throw new Error("Sqlite error");
-  return raw.stdout;
+  return new Promise((resolve, reject) => {
+    const sqlite3 = spawn(sqliteInvoker, [
+      ...sqliteCommands.map((c) => `-cmd "${c}"`),
+      `"${vscode.Uri.parse(dbFileUri).fsPath}"`,
+      `"${query}"`,
+    ]);
+
+    let stdout = "";
+    let stderr = "";
+
+    sqlite3.stdout.on("data", (data) => {
+      stdout += data;
+    });
+
+    sqlite3.stderr.on("data", (data) => {
+      stderr += data;
+    });
+
+    sqlite3.on("close", (code) => {
+      if (code !== 0 || stderr) {
+        reject(new Error(`Sqlite error ${stderr}`));
+      } else {
+        resolve(stdout);
+      }
+    });
+  });
 }
 
 /** DB that actually uses the sqlite3 that is availible on the machine
  */
 class NativeDB extends DB {
   #context: vscode.ExtensionContext;
-  constructor(context: vscode.ExtensionContext) {
+  #sqliteInvoker: string;
+  constructor(context: vscode.ExtensionContext, sqliteInvoker: string) {
     // check sqlite is here
-    try {
-      execSync("sqlite3 --version");
-    } catch (err) {
-      throw new Error(
-        "sqlite3 command not availible on the machine! You can install it here: https://www.sqlite.org/download.html. Don't forget to put it in PATH"
-      );
+    if (sqliteInvoker === "sqlite3") {
+      try {
+        execSync("sqlite3 --version");
+      } catch (err) {
+        throw new Error(
+          "sqlite3 command not availible on the machine! You can install it here: https://www.sqlite.org/download.html. Don't forget to put it in PATH"
+        );
+      }
     }
-
     super(context);
+    this.#sqliteInvoker = sqliteInvoker;
     this.#context = context;
   }
   async getWorkspaces() {
     const rawOut = await executeSQLiteCommand({
+      sqliteInvoker: this.#sqliteInvoker,
       dbFileUri: this.getFilePath(),
       sqliteCommands: [],
       query:
@@ -196,6 +223,7 @@ class NativeDB extends DB {
         (_, i) => `:workspace${i}`
       ).join(",")})`;
       rawOut = await executeSQLiteCommand({
+        sqliteInvoker: this.#sqliteInvoker,
         dbFileUri: this.getFilePath(),
         sqliteCommands,
         query,
@@ -203,6 +231,7 @@ class NativeDB extends DB {
     } else {
       const query = "SELECT * FROM entries WHERE date BETWEEN :from AND :to";
       rawOut = await executeSQLiteCommand({
+        sqliteInvoker: this.#sqliteInvoker,
         dbFileUri: this.getFilePath(),
         sqliteCommands,
         query,
@@ -242,6 +271,7 @@ class NativeDB extends DB {
     )}) VALUES (${colsWithoutId.map((c) => `:${c}`).join(", ")})`;
 
     executeSQLiteCommand({
+      sqliteInvoker: this.#sqliteInvoker,
       dbFileUri: this.getFilePath(),
       sqliteCommands,
       query,
@@ -254,6 +284,7 @@ class NativeDB extends DB {
     );
     const query = migrationQuery;
     await executeSQLiteCommand({
+      sqliteInvoker: this.#sqliteInvoker,
       dbFileUri: this.getFilePath(),
       sqliteCommands: [],
       query,

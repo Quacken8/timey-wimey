@@ -45,7 +45,6 @@
 
   let timescale: ITimeScaleApi<Time> | null;
   $: if (timescale && selectedRange) {
-    console.log(selectedRange);
     timescale.setVisibleRange({
       from: selectedRange.from.unix() as Time,
       to: selectedRange.to.unix() as Time,

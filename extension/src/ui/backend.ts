@@ -126,7 +126,6 @@ export function registerApiReplies(
       .with("topFiles", async () => {
         const { workspaces, from, to, number } = message as TopFilesQuery;
         const rows = await db.getRows(dayjs(from), dayjs(to), workspaces);
-        console.log(rows);
         const content = getMostUsedFiles(rows, number);
         sendToWebview({
           content,

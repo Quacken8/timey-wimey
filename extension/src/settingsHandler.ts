@@ -5,10 +5,7 @@ import * as vscode from "vscode";
 import { subscribe } from "./utils";
 import { Checker } from "./types";
 
-const developmentMode = process.env.NODE_ENV === "development";
-
 export function getInterval() {
-  if (developmentMode) return 1000 * 5;
   const settings = vscode.workspace.getConfiguration("timeyWimey");
   return settings.get<number>("writeInterval")! * 60 * 1000;
 }
