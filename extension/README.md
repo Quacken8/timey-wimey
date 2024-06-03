@@ -31,7 +31,7 @@ You can customize the behavior of Timey Wimey in your settings:
 
 - `timeyWimey.moveDBOnFileChange`: Move data from the old database to the new one when the database file changes (default: true).
 - `timeyWimey.writeInterval`: How often to write to the database in minutes (default: 5). Shorter time means more accurate data but bigger database
-- `timeyWimey.dbCommand`: What command to use to talk to the database (default: `sqlite3`). It is expected it understands sqlite syntax, specifically `command -cmd \".parameter init\" -cmd \".parameter set :name 'value'\" -cmd \".separator SEP\" \"path/to/db/file.sqlite\" \"SQL QUERY WITH :name PARAMETERS\"` and the schema of the database is expected as such:
+- `timeyWimey.dbCommand`: What command to use to talk to the database (default: `sqlite3`). It is expected it understands sqlite syntax, specifically `command -cmd \".parameter init\" -cmd \".parameter set :name 'value'\" -cmd \".separator SEP\" \"path/to/db/file.sqlite\" \"SQL QUERY WITH :name PARAMETERS\"`, output to sdtout is expected with columns separated by `SEP` and rows by a newline, and the schema of the database is expected as such:
   | Column name | type | flag |
   |-------------|------|------|
   | 'id' | integer |PRIMARY KEY AUTOINCREMENT NOT NULL |
