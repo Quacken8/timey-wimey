@@ -1,5 +1,10 @@
 import { CheckerOutput } from "../types";
-import { DBRowSelect, migrationQuery, parseForDB, tableCols } from "./schema";
+import {
+  type DBRowSelect,
+  migrationQuery,
+  parseForDB,
+  tableCols,
+} from "./schema";
 import dayjs from "dayjs";
 import * as vscode from "vscode";
 import { minutesToString } from "../ui/parseForUI";
@@ -21,55 +26,7 @@ export abstract class DB {
   abstract getWorkspaces(): Promise<string[]>;
 }
 
-/// used when variable "NODE_ENV" is "development"
-/// all queries are logged to console and no actual database is used
-export class DebuggingDB {
-  #context: vscode.ExtensionContext;
-
-  constructor(context: vscode.ExtensionContext) {
-    this.#context = context;
-  }
-
-  getFolderPath() {
-    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db").fsPath;
-  }
-
-  getFilePath() {
-    return vscode.Uri.joinPath(
-      vscode.Uri.parse(this.getFolderPath()),
-      "db.sqlite"
-    ).fsPath;
-  }
-
-  async insert(row: Promise<CheckerOutput>[]) {
-    console.log("Inserting");
-    (await Promise.all(row)).map((r) => console.log(`${r.key}: \t ${r.value}`));
-  }
-
-  getRows(
-    from: dayjs.Dayjs,
-    to: dayjs.Dayjs,
-    workspaces?: string[]
-  ): Promise<DBRowSelect[]> {
-    console.log("Selecting from", from, "to", to, "for", workspaces);
-    return Promise.resolve([]);
-  }
-
-  async getTodaysWork(): Promise<string> {
-    console.log("Getting todays work");
-    return "0m";
-  }
-
-  async getWorkspaces() {
-    console.log("Getting workspaces");
-    return ["no workspace"];
-  }
-}
-
 export async function getDB(context: vscode.ExtensionContext): Promise<DB> {
-  if (process.env.NODE_ENV === "development") {
-    return new DebuggingDB(context);
-  }
   const sqliteInvoker =
     vscode.workspace.getConfiguration("timeyWimey").get<string>("dbCommand") ??
     "sqlite3";
@@ -94,7 +51,8 @@ function escape(s: string): string {
 }
 
 /// just something so fucked up it's likely it won't appear in any filename
-const stdOutSeparator = "][Đđ[đ";
+const stdOutColSeparator = "][Đđ[đ";
+const stdOutRowSeparator = "łø^<<8ø";
 
 function executeSQLiteCommand({
   sqliteInvoker,
@@ -109,9 +67,9 @@ function executeSQLiteCommand({
 }): Promise<string> {
   return new Promise((resolve, reject) => {
     const sqlite3 = spawn(sqliteInvoker, [
-      ...sqliteCommands.map((c) => `-cmd "${c}"`),
-      `"${vscode.Uri.parse(dbFileUri).fsPath}"`,
-      `"${query}"`,
+      ...sqliteCommands.flatMap((c) => [`-cmd`, `${c}`]),
+      `${vscode.Uri.parse(dbFileUri).fsPath}`,
+      `${query}`,
     ]);
 
     let stdout = "";
@@ -159,16 +117,18 @@ class NativeDB extends DB {
     const rawOut = await executeSQLiteCommand({
       sqliteInvoker: this.#sqliteInvoker,
       dbFileUri: this.getFilePath(),
-      sqliteCommands: [],
+      sqliteCommands: [
+        `.separator '${stdOutColSeparator}' '${stdOutRowSeparator}'`,
+      ],
       query:
         "SELECT workspace FROM entries GROUP BY workspace ORDER BY MAX(date) DESC;",
     });
     const res = rawOut
-      .split("\n")
+      .split(stdOutRowSeparator)
       .map((row) =>
-        row.split(stdOutSeparator)[0] === ""
+        row.split(stdOutColSeparator)[0] === ""
           ? "no workspace"
-          : row.split(stdOutSeparator)[0]
+          : row.split(stdOutColSeparator)[0]
       );
     return res;
   }
@@ -202,7 +162,7 @@ class NativeDB extends DB {
   ): Promise<DBRowSelect[]> {
     let rawOut;
     const sqliteCommands = [
-      `.separator '${stdOutSeparator}'`,
+      `.separator '${stdOutColSeparator}' '${stdOutRowSeparator}'`,
       `.parameter init`,
       `.parameter set :from '${from.unix()}'`,
       `.parameter set :to '${to.unix()}'`,
@@ -240,20 +200,23 @@ class NativeDB extends DB {
     const possiblyNull: (x: string) => null | string = (x: string) =>
       x === "" ? null : x;
     if (rawOut === "") return [];
-    return rawOut.split("\n").map((row) => {
-      const s = row.split(stdOutSeparator);
-      return {
-        id: Number(s[0]),
-        date: new Date(Number(s[1]) * 1000),
-        interval_minutes: Number(s[2]),
-        working: Boolean(Number(s[3])),
-        window_focused: Boolean(Number(s[4])),
-        workspace: s[5],
-        current_file: possiblyNull(s[6]),
-        last_commit_hash: possiblyNull(s[7]),
-        custom: possiblyNull(s[8]),
-      };
-    });
+    return rawOut
+      .split(stdOutRowSeparator)
+      .slice(0, -1)
+      .map((row) => {
+        const s = row.split(stdOutColSeparator);
+        return {
+          id: Number(s[0]),
+          date: new Date(Number(s[1]) * 1000),
+          interval_minutes: Number(s[2]),
+          working: Boolean(Number(s[3])),
+          window_focused: Boolean(Number(s[4])),
+          workspace: s[5],
+          current_file: possiblyNull(s[6]),
+          last_commit_hash: possiblyNull(s[7]),
+          custom: possiblyNull(s[8]),
+        };
+      });
   }
 
   async insert(row: Promise<CheckerOutput>[]) {

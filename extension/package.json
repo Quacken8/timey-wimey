@@ -58,7 +58,8 @@
           "default": "sqlite3",
           "description": "What command to use to talk to the database. For info on format refer to the extension README.md"
         }
-      }}
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run build-frontend && npm run esbuild-base -- --minify",
@@ -66,7 +67,7 @@
     "esbuild": "npm run esbuild-base -- --sourcemap",
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
     "test-compile": "tsc -p ./",
-    "compile": "tsc -p ./",
+    "compile": "npm run build-frontend && tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",

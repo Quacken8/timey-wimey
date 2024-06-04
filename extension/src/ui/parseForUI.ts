@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { DBRowSelect } from "../db/schema";
+import { type DBRowSelect } from "../db/schema";
 import { dateSetLength } from "./dateSetLength";
 
 export type SummaryData = {

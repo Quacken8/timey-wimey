@@ -3,7 +3,6 @@ import * as vscode from "vscode";
 import { subscribe } from "./utils";
 import dayjs from "dayjs";
 import { gitlogPromise } from "gitlog";
-import { debugLog } from "./debugLogger";
 
 /** Checks current time */
 export const timeChecherSetup: CheckerSetuper = () => {

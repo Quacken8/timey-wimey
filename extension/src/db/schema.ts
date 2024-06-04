@@ -1,5 +1,5 @@
 import { match, P } from "ts-pattern";
-import { CheckerOutput } from "../types";
+import type { CheckerOutput } from "../types";
 
 export type DBRowInsert = {
   date: number;
