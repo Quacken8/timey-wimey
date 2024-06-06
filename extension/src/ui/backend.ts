@@ -9,6 +9,16 @@ import {
   summarize as summarize,
 } from "./parseForUI";
 import { HistogramData, binForHistogram } from "./histogramBinner";
+import {
+  OpenFileEntry,
+  CustomEntry,
+  IntervalEntry,
+  WorkingEntry,
+  WindowFocusEntry,
+  TimeEntry,
+  LastCommitEntry,
+  CheckerOutput,
+} from "../types";
 
 export type FullDataAnswer = {
   address: number;
@@ -28,6 +38,21 @@ export type SummaryAnswer = {
 export type TopFilesAnswer = {
   address: number;
   content: Record<string, number>;
+};
+
+export type LinesAffectedAnswer = {
+  address: number;
+  content: number;
+};
+
+export type FolderSelectAnswer = {
+  address: number;
+  content: string;
+};
+
+export type FileSelectAnswer = {
+  address: number;
+  content: string;
 };
 
 export type HistogramAnswer = {
@@ -73,18 +98,67 @@ export type HistogramQuery = {
   workspaces: string[];
 };
 
+export type FileSelectQuery = {
+  type: "selectFile";
+  address: number;
+};
+
+export type FolderSelectQuery = {
+  type: "selectFolder";
+  address: number;
+};
+
+export type InsertEntryQuery = {
+  type: "insertEntry";
+  address: number;
+  entries: CheckerOutput[];
+};
+
+export type DeleteQuery = {
+  type: "delete";
+  address: number;
+  deleteOptions:
+    | {
+        date: Date;
+      }
+    | {
+        workspace: string;
+      };
+};
+
+export type LinesAffectedQuery = {
+  type: "linesAffected";
+  address: number;
+  deleteOptions:
+    | {
+        date: Date;
+      }
+    | {
+        workspace: string;
+      }
+    | undefined;
+};
+
 export type Query =
   | FullDataQuery
   | WorkspacesQuery
   | SummaryQuery
   | TopFilesQuery
-  | HistogramQuery;
+  | FileSelectQuery
+  | FolderSelectQuery
+  | HistogramQuery
+  | InsertEntryQuery
+  | LinesAffectedQuery
+  | DeleteQuery;
 
 export type Answer =
   | FullDataAnswer
   | WorkspacesAnswer
   | SummaryAnswer
   | TopFilesAnswer
+  | FileSelectAnswer
+  | FolderSelectAnswer
+  | LinesAffectedAnswer
   | HistogramAnswer;
 
 export function registerApiReplies(
@@ -140,6 +214,81 @@ export function registerApiReplies(
           content,
           address,
         });
+      })
+      .with("selectFile", async () => {
+        const content =
+          (
+            await vscode.window.showOpenDialog({
+              canSelectMany: false,
+              openLabel: "Select File",
+              canSelectFolders: false,
+              canSelectFiles: true,
+            })
+          )?.[0].fsPath.replace(/^file:\/\//, "") ?? "";
+
+        sendToWebview({
+          content,
+          address,
+        });
+      })
+      .with("selectFolder", async () => {
+        const content =
+          (
+            await vscode.window.showOpenDialog({
+              canSelectMany: false,
+              openLabel: "Select Workspace",
+              canSelectFolders: true,
+              canSelectFiles: false,
+            })
+          )?.[0].fsPath.replace(/^file:\/\//, "") ?? "";
+        sendToWebview({
+          content,
+          address,
+        });
+      })
+      .with("insertEntry", async () => {
+        const { entries } = message as InsertEntryQuery;
+        await db.insert(
+          entries.map((e) =>
+            Promise.resolve(
+              e.key === "timestamp"
+                ? {
+                    key: "timestamp",
+                    value: dayjs(new Date((e.value as any) * 1000)),
+                  }
+                : e
+            )
+          )
+        );
+      })
+      .with("linesAffected", async () => {
+        let content = 0;
+        if ((message as LinesAffectedQuery).deleteOptions === undefined)
+          content = await db.getLineCount({
+            workspace: undefined,
+            date: undefined,
+          });
+        else {
+          const options = (message as LinesAffectedQuery).deleteOptions!;
+          if ("workspace" in options)
+            content = await db.getLineCount({
+              workspace: options.workspace,
+              date: undefined,
+            });
+          else
+            content = await db.getLineCount({
+              date: dayjs(options.date),
+              workspace: undefined,
+            });
+        }
+        sendToWebview({
+          content,
+          address,
+        });
+      })
+      .with("delete", async () => {
+        console.log("trying to delete");
+        console.log({ message });
       })
       .exhaustive();
   });

@@ -34,10 +34,6 @@
       {
         "command": "timeyWimey.showStats",
         "title": "Timey Wimey: Show interactive statistics of your work"
-      },
-      {
-        "command": "timeyWimey.insertEntry",
-        "title": "Timey Wimey: Insert a new custom working entry"
       }
     ],
     "configuration": {
@@ -62,8 +58,8 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run build-frontend && npm run esbuild-base -- --minify",
-    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "npm run build-frontend && esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
     "esbuild": "npm run esbuild-base -- --sourcemap",
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
     "test-compile": "tsc -p ./",

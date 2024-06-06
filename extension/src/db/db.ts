@@ -10,27 +10,13 @@ import * as vscode from "vscode";
 import { minutesToString } from "../ui/parseForUI";
 import { dateSetLength } from "../ui/dateSetLength";
 import { spawn, execSync } from "child_process";
-
-export abstract class DB {
-  constructor(context: vscode.ExtensionContext) {}
-
-  abstract getFolderPath(): string;
-  abstract getFilePath(): string;
-  abstract insert(row: Promise<CheckerOutput>[]): Promise<void>;
-  abstract getRows(
-    from: dayjs.Dayjs,
-    to: dayjs.Dayjs,
-    workspaces?: string[]
-  ): Promise<DBRowSelect[]>;
-  abstract getTodaysWork(): Promise<string>;
-  abstract getWorkspaces(): Promise<string[]>;
-}
+import { getPeriodOfRange } from "../ui/histogramBinner";
 
 export async function getDB(context: vscode.ExtensionContext): Promise<DB> {
   const sqliteInvoker =
     vscode.workspace.getConfiguration("timeyWimey").get<string>("dbCommand") ??
     "sqlite3";
-  return new NativeDB(context, sqliteInvoker);
+  return new DB(context, sqliteInvoker);
 }
 
 export const reduceToPerRepo = (rows: DBRowSelect[]) =>
@@ -68,7 +54,7 @@ function executeSQLiteCommand({
   return new Promise((resolve, reject) => {
     const sqlite3 = spawn(sqliteInvoker, [
       ...sqliteCommands.flatMap((c) => [`-cmd`, `${c}`]),
-      `${vscode.Uri.parse(dbFileUri).fsPath}`,
+      `${vscode.Uri.parse(dbFileUri).fsPath.replace(/^file:\/\//, "")}`,
       `${query}`,
     ]);
 
@@ -95,7 +81,7 @@ function executeSQLiteCommand({
 
 /** DB that actually uses the sqlite3 that is availible on the machine
  */
-class NativeDB extends DB {
+class DB {
   #context: vscode.ExtensionContext;
   #sqliteInvoker: string;
   constructor(context: vscode.ExtensionContext, sqliteInvoker: string) {
@@ -109,7 +95,6 @@ class NativeDB extends DB {
         );
       }
     }
-    super(context);
     this.#sqliteInvoker = sqliteInvoker;
     this.#context = context;
   }
@@ -134,14 +119,17 @@ class NativeDB extends DB {
   }
 
   getFolderPath() {
-    return vscode.Uri.joinPath(this.#context.globalStorageUri, "db").fsPath;
+    return vscode.Uri.joinPath(
+      this.#context.globalStorageUri,
+      "db"
+    ).fsPath.replace(/^file:\/\//, "");
   }
 
   getFilePath() {
     return vscode.Uri.joinPath(
       vscode.Uri.parse(this.getFolderPath()),
       "db.sqlite"
-    ).fsPath;
+    ).fsPath.replace(/^file:\/\//, "");
   }
   async getTodaysWork(): Promise<string> {
     const now = dayjs();
@@ -160,6 +148,8 @@ class NativeDB extends DB {
     to: dayjs.Dayjs,
     workspaces?: string[]
   ): Promise<DBRowSelect[]> {
+    const period = getPeriodOfRange(from, to);
+    from = from.endOf(period);
     let rawOut;
     const sqliteCommands = [
       `.separator '${stdOutColSeparator}' '${stdOutRowSeparator}'`,
@@ -227,7 +217,12 @@ class NativeDB extends DB {
     >[];
     const sqliteCommands = [".parameter init"];
     sqliteCommands.push(
-      ...colsWithoutId.map((c) => `.parameter set :${c} '${resolved[c]}'`)
+      ...colsWithoutId.map(
+        (c) =>
+          `.parameter set :${c} ${
+            resolved[c] === undefined ? `NULL` : `'${resolved[c]}'`
+          }`
+      )
     );
     const query = `INSERT INTO entries (${colsWithoutId.join(
       ", "
@@ -239,6 +234,44 @@ class NativeDB extends DB {
       sqliteCommands,
       query,
     });
+  }
+
+  public async getLineCount({
+    workspace,
+    date,
+  }: {
+    workspace: string | undefined;
+    date: dayjs.Dayjs | undefined;
+  }): Promise<number> {
+    let query = "SELECT COUNT(*) FROM entries";
+    const conditions = [];
+    const sqliteCommands = [];
+
+    if (workspace !== undefined) {
+      conditions.push("workspace = :workspace");
+      const name =
+        workspace === "no workspace" ? "NULL" : `'${escape(workspace)}'`;
+      sqliteCommands.push(`.parameter set :workspace ${name}`);
+    }
+
+    if (date !== undefined) {
+      conditions.push("date < :timestamp");
+      sqliteCommands.push(`.parameter set :timestamp '${date.unix()}`);
+    }
+
+    if (conditions.length > 0) {
+      query += " WHERE " + conditions.join(" AND ");
+      sqliteCommands.unshift(".parameter init");
+    }
+
+    return Number(
+      await executeSQLiteCommand({
+        sqliteInvoker: this.#sqliteInvoker,
+        dbFileUri: this.getFilePath(),
+        sqliteCommands,
+        query,
+      })
+    );
   }
 
   async doMigrate() {

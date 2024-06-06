@@ -1,3 +1,4 @@
+import type { CheckerOutput } from "@extension/src/types";
 import type {
   Answer,
   HistogramQuery,
@@ -5,9 +6,15 @@ import type {
   SummaryQuery,
   TopFilesQuery,
   WorkspacesQuery,
+  FileSelectQuery,
+  FolderSelectQuery,
+  InsertEntryQuery,
+  DeleteQuery,
+  LinesAffectedQuery,
 } from "@extension/src/ui/backend";
 import type { HistogramData } from "@extension/src/ui/histogramBinner";
 import type { SummaryData } from "@extension/src/ui/parseForUI";
+import dayjs from "dayjs";
 
 let vscode = acquireVsCodeApi();
 
@@ -37,7 +44,10 @@ function postMessage(
   const query = { ...message, address };
   postbox[address] = resolve;
 
-  const timeout = 5000;
+  const timeout =
+    message.type === "selectFile" || message.type === "selectFolder"
+      ? 5 * 60 * 1000
+      : 5 * 1000;
   setTimeout(() => {
     delete postbox[address];
     reject(`Request for ${message.type} timed out`);
@@ -98,6 +108,71 @@ export function getHistogramData(
       from,
       to,
       workspaces,
+    };
+    postMessage(message, resolve as any, reject);
+  });
+}
+
+export function selectFile(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const message: Omit<FileSelectQuery, "address"> = {
+      type: "selectFile",
+    };
+    postMessage(message, resolve as any, reject);
+  });
+}
+
+export function selectFolder(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const message: Omit<FolderSelectQuery, "address"> = {
+      type: "selectFolder",
+    };
+    postMessage(message, resolve as any, reject);
+  });
+}
+
+export function insertEntry(entries: any[]) {
+  new Promise((resolve, reject) => {
+    const message: Omit<InsertEntryQuery, "address"> = {
+      type: "insertEntry",
+      entries,
+    };
+    postMessage(message, resolve as any, reject);
+  });
+}
+
+export function linesAffected(
+  deleteOptions:
+    | {
+        workspace: string;
+      }
+    | {
+        date: Date;
+      }
+    | undefined
+) {
+  return new Promise<number>((resolve, reject) => {
+    const message: Omit<LinesAffectedQuery, "address"> = {
+      type: "linesAffected",
+      deleteOptions,
+    };
+    postMessage(message, resolve as any, reject);
+  });
+}
+
+export function deleteEntries(
+  deleteOptions:
+    | {
+        workspace: string;
+      }
+    | {
+        date: Date;
+      }
+) {
+  new Promise((resolve, reject) => {
+    const message: Omit<DeleteQuery, "address"> = {
+      type: "delete",
+      deleteOptions,
     };
     postMessage(message, resolve as any, reject);
   });

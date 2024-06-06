@@ -22,11 +22,11 @@
       {@const unicodeHistogram = histogram(
         data.map((d) => [d.label, d.workingHours]),
         {
-          width: width / 10,
+          width: width / 12,
           type: "bar",
           showValues: true,
           drawOptions: {
-            histoChars: ["▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"], //["▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"],
+            histoChars: ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"], //["▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"],
           },
           significantDigits: 2,
           headers: ["time", "hours"],
@@ -43,5 +43,6 @@
   .graph-container {
     font-family: "DejaVu Sans Mono Book", "FiraCode Nerd Font Mono", monospace;
     white-space: pre;
+    overflow: hidden;
   }
 </style>

@@ -93,7 +93,11 @@ export const openFileCheckerSetup: CheckerSetuper = (
 /** Checks hash of last commit */
 export const lastCommitCheckerSetup: CheckerSetuper = () => {
   return async () => {
-    const rootFolder = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    const rootFolder =
+      vscode.workspace.workspaceFolders?.[0].uri.fsPath.replace(
+        /^file:\/\//,
+        ""
+      );
     let hash;
     try {
       hash = rootFolder

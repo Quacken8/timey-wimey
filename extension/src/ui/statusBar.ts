@@ -2,7 +2,6 @@ import * as vscode from "vscode";
 import { subscribe } from "../utils";
 import { StatusBarUpdater } from "../timer";
 import { getDB } from "../db/db";
-import { webviewCallback } from "./frontendMaker";
 
 export const subscribeStatusBar = async (
   updater: StatusBarUpdater,

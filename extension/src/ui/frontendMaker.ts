@@ -7,7 +7,10 @@ export const webviewCallback = async (context: vscode.ExtensionContext) => {
     "Timey webview", // Identifies the type of the webview. Used internally
     "Timey Wimey", // Title of the panel displayed to the user
     vscode.ViewColumn.One, // Editor column to show the new webview panel in.
-    { enableScripts: true } // Webview options. More on these later.
+    {
+      enableScripts: true,
+      retainContextWhenHidden: true,
+    } // Webview options. More on these later.
   );
   // panel.iconPath = {
   //   dark: vscode.Uri.joinPath(

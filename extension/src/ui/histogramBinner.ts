@@ -12,12 +12,23 @@ export function binForHistogram(
 ): HistogramData {
   if (data.length === 0) return [];
   const period = getPeriodOfRange(from, to);
-  let currDay = dayjs(data[0].date).startOf(period).subtract(0.5, period);
+  let currDay = from.startOf(period).subtract(1, period);
   let bins: HistogramData = [];
+  data.push({
+    interval_minutes: 0,
+    current_file: null,
+    workspace: null,
+    working: false,
+    custom: null,
+    id: 0,
+    last_commit_hash: null,
+    window_focused: false,
+    date: to.toDate(),
+  });
 
   for (const row of data) {
-    const rowDay = dayjs(row.date).startOf(period).add(0.5, period);
-    while (rowDay.isAfter(currDay)) {
+    const rowDay = dayjs(row.date).startOf(period);
+    while (rowDay.isAfter(currDay.endOf(period))) {
       currDay = currDay.add(1, period);
       bins.push({
         workingHours: 0,
@@ -27,10 +38,11 @@ export function binForHistogram(
     bins[bins.length - 1].workingHours +=
       (+(row.working || row.window_focused) * row.interval_minutes) / 60;
   }
+
   return bins;
 }
 
-function getPeriodOfRange(from: dayjs.Dayjs, to: dayjs.Dayjs): Period {
+export function getPeriodOfRange(from: dayjs.Dayjs, to: dayjs.Dayjs): Period {
   const shortWindow = 1.5;
   for (const era of periodsFromLargest) {
     if (to.diff(from, era) > shortWindow) return era;
@@ -50,7 +62,7 @@ export type Period = (typeof periodsFromLargest)[number];
 const formattingStrings: FormattingStrings = {
   years: ["YYYY", undefined],
   months: ["MMM", "YYYY"],
-  days: ["MMM D", "YYYY"],
+  days: ["DD.M.", "YYYY"],
   hours: ["HH:mm", "MMM D YYYY"],
   minutes: ["HH:mm", "MMM D YYYY"],
   seconds: ["HH:mm:ss", "MMM D YYYY"],
@@ -70,5 +82,5 @@ function formatWithAccuracy(
 ): string {
   date = dayjs(date);
 
-  return formattingStrings[accuracy].map((s) => date.format(s)).join(" ");
+  return date.format(formattingStrings[accuracy][0]);
 }
