@@ -26,7 +26,7 @@
           type: "bar",
           showValues: true,
           drawOptions: {
-            histoChars: ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"], //["▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"],
+            histoChars: ["", ":"], //["▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"],
           },
           significantDigits: 2,
           headers: ["time", "hours"],
@@ -41,7 +41,7 @@
 
 <style>
   .graph-container {
-    font-family: "DejaVu Sans Mono Book", "FiraCode Nerd Font Mono", monospace;
+    font-family: monospace;
     white-space: pre;
     overflow: hidden;
   }

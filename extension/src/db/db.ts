@@ -274,6 +274,33 @@ class DB {
     );
   }
 
+  public async deleteRows(
+    arg:
+      | {
+          workspace: string;
+        }
+      | {
+          date: dayjs.Dayjs;
+        }
+  ) {
+    let query = "DELETE FROM entries";
+    const sqliteCommands = [".parameter init"];
+    if ("workspace" in arg) {
+      query += " WHERE workspace = :workspace";
+      sqliteCommands.push(`.parameter set :workspace ${escape(arg.workspace)}`);
+    } else {
+      query += " WHERE date < :date";
+      sqliteCommands.push(`.parameter set :date ${arg.date.unix()}`);
+    }
+
+    return await executeSQLiteCommand({
+      sqliteInvoker: this.#sqliteInvoker,
+      dbFileUri: this.getFilePath(),
+      sqliteCommands,
+      query,
+    });
+  }
+
   async doMigrate() {
     await vscode.workspace.fs.createDirectory(
       vscode.Uri.parse(this.getFolderPath())

@@ -1,6 +1,4 @@
-import dayjs from "dayjs";
 import { getDB } from "./db/db";
-import { TimeEntry } from "./types";
 import { webviewCallback } from "./ui/frontendMaker";
 import { subscribe } from "./utils";
 import * as vscode from "vscode";

@@ -30,7 +30,13 @@
     .subtract(2, "month")
     .format("YYYY-MM-DDThh:mm");
 
-  let deletionOptions;
+  let deletionOptions:
+    | {
+        date: Date;
+      }
+    | {
+        workspace: string;
+      };
   const click = async () => {
     deletionOptions =
       which === "date"
@@ -43,6 +49,12 @@
     affectedLines = await linesAffected(deletionOptions);
     totalLines = await linesAffected(undefined);
     confirmaDialog.showModal();
+  };
+
+  const confirmDialogClick = () => {
+    deleteEntries(deletionOptions);
+    confirmaDialog.close();
+    dialog.close();
   };
 
   let affectedLines = 0;
@@ -102,7 +114,7 @@
       totalLines
     ).toFixed(1)} % of the whole database.
     <div>
-      <button>Confirm</button>
+      <button on:click={confirmDialogClick}>Confirm</button>
       <button on:click={() => confirmaDialog.close()}>Cancel</button>
     </div>
   </span>

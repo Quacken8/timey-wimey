@@ -287,8 +287,10 @@ export function registerApiReplies(
         });
       })
       .with("delete", async () => {
-        console.log("trying to delete");
-        console.log({ message });
+        let options = (message as DeleteQuery).deleteOptions;
+        const dayjsified =
+          "date" in options ? { date: dayjs(options.date) } : options;
+        db.deleteRows(dayjsified);
       })
       .exhaustive();
   });

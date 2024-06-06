@@ -113,31 +113,35 @@
     </div>
     <div>
       What workspace were you working in
-      <input
-        type="text"
-        list="workspaces"
-        placeholder="path/to/workspace"
-        name="workspace"
-        bind:value={selectedWorkspace}
-      />
-      <datalist id="workspaces">
-        {#await workspaces then resolvedWorkspaces}
-          {#each resolvedWorkspaces as workspace}
-            <option value={workspace} />
-          {/each}
-        {/await}
-      </datalist>
-      <button on:click={fillUpWorkspace}>Select</button>
+      <span>
+        <input
+          type="text"
+          list="workspaces"
+          placeholder="path/to/workspace"
+          name="workspace"
+          bind:value={selectedWorkspace}
+        />
+        <datalist id="workspaces">
+          {#await workspaces then resolvedWorkspaces}
+            {#each resolvedWorkspaces as workspace}
+              <option value={workspace} />
+            {/each}
+          {/await}
+        </datalist>
+        <button on:click={fillUpWorkspace}>Select</button>
+      </span>
     </div>
     <div>
       What file were you working on
-      <input
-        type="text"
-        placeholder="path/to/file"
-        name="file"
-        bind:value={selectedFile}
-      />
-      <button on:click={fillUpFile}>Select</button>
+      <span>
+        <input
+          type="text"
+          placeholder="path/to/file"
+          name="file"
+          bind:value={selectedFile}
+        />
+        <button on:click={fillUpFile}>Select</button>
+      </span>
     </div>
     <div>
       Which commit were you working on
