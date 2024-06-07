@@ -37,8 +37,8 @@ function escape(s: string): string {
 }
 
 /// just something so fucked up it's likely it won't appear in any filename
-const stdOutColSeparator = "][Đđ[đ";
-const stdOutRowSeparator = "łø^<<8ø";
+const stdOutColSeparator = "]:]]:]]::";
+const stdOutRowSeparator = "[:[[:[[::";
 
 function executeSQLiteCommand({
   sqliteInvoker,
@@ -191,7 +191,7 @@ class DB {
     const possiblyNull: (x: string) => null | string = (x: string) =>
       x === "" ? null : x;
     if (rawOut === "") return [];
-    return rawOut
+    const res = rawOut
       .split(stdOutRowSeparator)
       .slice(0, -1)
       .map((row) => {
@@ -208,6 +208,7 @@ class DB {
           custom: possiblyNull(s[8]),
         };
       });
+    return res;
   }
 
   async insert(row: Promise<CheckerOutput>[]) {

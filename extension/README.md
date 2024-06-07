@@ -14,7 +14,7 @@ Timey Wimey is a simple, free time tracker extension for Visual Studio Code. It 
 
 - By default this extension requires the machine's shell to understand `sqlite3`. For MacOS and most Linux distros `sqlite3` is already installed.
 - If it isn't installed download it from [the official website](https://sqlite.org/download.html) and don't forget to put it in PATH
-- or define your own db command in the configuration
+  - or define your own db command in the configuration
 
 ## Usage
 
@@ -36,7 +36,7 @@ You can customize the behavior of Timey Wimey in your settings:
   | 'id' | integer |PRIMARY KEY AUTOINCREMENT NOT NULL |
   | 'date' | integer |NOT NULL |
   | 'interval_minutes' | real |NOT NULL |
-  | 'working'| integer| NOT NULL |
+  | 'working'| integer | NOT NULL |
   | 'window_focused'| integer | NOT NULL |
   | 'workspace'| text| |
   | 'current_file' | text| |

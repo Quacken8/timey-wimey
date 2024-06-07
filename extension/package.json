@@ -1,10 +1,10 @@
 {
   "name": "timey-wimey-tracker",
   "displayName": "Timey Wimey",
-  "description": "Extension that keeps track of time spent coding per user per project",
+  "description": "Free and easy to use time tracker",
   "icon": "assets/clock-melting.png",
   "publisher": "Quacken",
-  "version": "0.3.1",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/Quacken8/timey-wimey"
@@ -13,7 +13,9 @@
     "simple",
     "free",
     "time",
-    "tracker"
+    "tracker",
+    "local",
+    "sqlite"
   ],
   "engines": {
     "vscode": "^1.85.0"

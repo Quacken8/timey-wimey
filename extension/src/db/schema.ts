@@ -61,7 +61,7 @@ export function parseForDB(row: CheckerOutput[]): DBRowInsert {
         parsedRow.window_focused = e.value;
       })
       .with({ key: "custom" }, (e) => {
-        parsedRow.custom = JSON.stringify(e.value);
+        parsedRow.custom = e.value?.toString();
       })
       .with({ key: "interval_minutes" }, (e) => {
         parsedRow.interval_minutes = e.value;
