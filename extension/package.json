@@ -4,7 +4,7 @@
   "description": "Extension that keeps track of time spent coding per user per project",
   "icon": "assets/clock-melting.png",
   "publisher": "Quacken",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/Quacken8/timey-wimey"
@@ -39,11 +39,6 @@
     "configuration": {
       "title": "Timey Wimey",
       "properties": {
-        "timeyWimey.moveDBOnFileChange": {
-          "type": "boolean",
-          "default": true,
-          "description": "Move data from the old database to the new one when the database file changes"
-        },
         "timeyWimey.writeInterval": {
           "type": "number",
           "default": 5,
@@ -60,11 +55,9 @@
   "scripts": {
     "vscode:prepublish": "npm run esbuild-base -- --minify",
     "esbuild-base": "npm run build-frontend && esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
-    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "compile": "npm run esbuild-base -- --sourcemap",
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
     "test-compile": "tsc -p ./",
-    "compile": "npm run build-frontend && tsc -p ./",
-    "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "jest",

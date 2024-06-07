@@ -45,7 +45,7 @@ export type WindowFocusEntry = {
 
 export type WorkspaceEntry = {
   key: "workspace";
-  value: vscode.Uri | undefined;
+  value: string | undefined;
 };
 
 export type OpenFileEntry = {

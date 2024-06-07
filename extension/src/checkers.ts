@@ -63,7 +63,10 @@ export const worksapceCheckerSetup: CheckerSetuper = () => {
   return async () => {
     return {
       key: "workspace",
-      value: vscode.workspace.workspaceFolders?.[0].uri,
+      value: vscode.workspace.workspaceFolders?.[0].uri.fsPath.replace(
+        /^file:\/\//,
+        ""
+      ),
     };
   };
 };

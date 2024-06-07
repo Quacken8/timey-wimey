@@ -5,10 +5,10 @@ Timey Wimey is a simple, free time tracker extension for Visual Studio Code. It 
 ## Features
 
 - Tracks your working time per workspace, per file, and even per commit.
-- Allows you to add a custom tracker to track whatever you'd like. **TBD**
 - Uses local installation of `sqlite3` making it work anywhere where sqlite runs.
 - Allows you to use your own database instead of sqlite.
 - Shows the tracking data in a handy webview UI
+- **TBD** Allows you to add a custom tracker to track whatever you'd like.
 
 ## !Prerequisites
 
@@ -29,9 +29,8 @@ Timey Wimey is a simple, free time tracker extension for Visual Studio Code. It 
 
 You can customize the behavior of Timey Wimey in your settings:
 
-- `timeyWimey.moveDBOnFileChange`: Move data from the old database to the new one when the database file changes (default: true).
 - `timeyWimey.writeInterval`: How often to write to the database in minutes (default: 5). Shorter time means more accurate data but bigger database
-- `timeyWimey.dbCommand`: What command to use to talk to the database (default: `sqlite3`). It is expected it understands sqlite syntax, specifically `command -cmd \".parameter init\" -cmd \".parameter set :name 'value'\" -cmd \".separator SEP\" \"path/to/db/file.sqlite\" \"SQL QUERY WITH :name PARAMETERS\"`, output to sdtout is expected with columns separated by `SEP` and rows by a newline, and the schema of the database is expected as such:
+- `timeyWimey.dbCommand`: What command to use to talk to the database (default: `sqlite3`). It is expected it understands sqlite3 syntax, specifically `command -cmd \".parameter init\" -cmd \".parameter set :name 'value'\" -cmd \".separator LINE ROW\" \"path/to/db/file.sqlite\" \"SQL QUERY WITH :name PARAMETERS\"`, output to sdtout is expected with columns separated by `LINE` and rows by `ROW`, and the schema of the database is expected as such:
   | Column name | type | flag |
   |-------------|------|------|
   | 'id' | integer |PRIMARY KEY AUTOINCREMENT NOT NULL |

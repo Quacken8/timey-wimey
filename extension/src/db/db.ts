@@ -110,6 +110,7 @@ class DB {
     });
     const res = rawOut
       .split(stdOutRowSeparator)
+      .slice(0, -1)
       .map((row) =>
         row.split(stdOutColSeparator)[0] === ""
           ? "no workspace"

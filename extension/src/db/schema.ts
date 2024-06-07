@@ -46,8 +46,7 @@ export function parseForDB(row: CheckerOutput[]): DBRowInsert {
         parsedRow.date = e.value.unix();
       })
       .with({ key: "workspace" }, (e) => {
-        parsedRow.workspace =
-          e.value === undefined ? undefined : e.value.toString();
+        parsedRow.workspace = e.value;
       })
       .with({ key: "current_file" }, (e) => {
         parsedRow.current_file = e.value;

@@ -22,8 +22,6 @@
     "@types/vscode": "^1.85.0",
     "@types/vscode-webview": "^1.57.5",
     "dayjs": "^1.11.10",
-    "lightweight-charts": "^4.1.3",
-    "svelte-lightweight-charts": "^2.2.0",
     "thistogram": "^1.1.1",
     "unocss": "^0.58.6",
     "vite-plugin-singlefile": "^2.0.1"
