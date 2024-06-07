@@ -4,7 +4,7 @@
   "description": "Extension that keeps track of time spent coding per user per project",
   "icon": "assets/clock-melting.png",
   "publisher": "Quacken",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/Quacken8/timey-wimey"
