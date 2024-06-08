@@ -1,14 +1,14 @@
 # Timey Wimey Time Tracker
 
-Timey Wimey is a simple, free time tracker extension for Visual Studio Code. It keeps track of time spent coding per project.
+Timey Wimey is a free and automatic time tracker extension for VSCode. It requires no account, no sign-up, not even connection to the internet. It automatically keeps track of time spent coding per project and stores the data locally.
 
 ## Features
 
 - Tracks your working time per workspace, per file, and even per commit.
+- Needs no activation, it automatically tracks what time you spend writing code and what time you spend just with the window focused.
+- Shows the tracking data in a handy webview UI.
 - Uses local installation of `sqlite3` making it work anywhere where sqlite runs.
 - Allows you to use your own database instead of sqlite.
-- Shows the tracking data in a handy webview UI
-- **TBD** Allows you to add a custom tracker to track whatever you'd like.
 
 ## !Prerequisites
 

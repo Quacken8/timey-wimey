@@ -1,10 +1,10 @@
 {
   "name": "timey-wimey-tracker",
   "displayName": "Timey Wimey",
-  "description": "Free and easy to use time tracker",
+  "description": "Free automatic time tracker",
   "icon": "assets/clock-melting.png",
   "publisher": "Quacken",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/Quacken8/timey-wimey"
@@ -12,6 +12,7 @@
   "keywords": [
     "simple",
     "free",
+    "automatic",
     "time",
     "tracker",
     "local",
@@ -63,7 +64,6 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "jest",
-    "migrate": "tsx .drizzle/migrator.ts",
     "build-frontend": "cd ../frontend && pnpm build && cd ../extension"
   },
   "devDependencies": {

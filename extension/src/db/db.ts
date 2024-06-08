@@ -230,7 +230,7 @@ class DB {
       ", "
     )}) VALUES (${colsWithoutId.map((c) => `:${c}`).join(", ")})`;
 
-    executeSQLiteCommand({
+    return await executeSQLiteCommand({
       sqliteInvoker: this.#sqliteInvoker,
       dbFileUri: this.getFilePath(),
       sqliteCommands,
