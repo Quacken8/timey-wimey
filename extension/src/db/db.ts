@@ -54,7 +54,9 @@ function executeSQLiteCommand({
   return new Promise((resolve, reject) => {
     const sqlite3 = spawn(sqliteInvoker, [
       ...sqliteCommands.flatMap((c) => [`-cmd`, `${c}`]),
-      `${vscode.Uri.parse(dbFileUri).fsPath.replace(/^file:\/\//, "")}`,
+      `${vscode.Uri.parse(dbFileUri)
+        .fsPath.replace(/^file:\/\//, "")
+        .replace(/^\\\\/, "\\")}`,
       `${query}`,
     ]);
 
