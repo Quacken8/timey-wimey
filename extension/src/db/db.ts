@@ -309,8 +309,9 @@ class DB {
 
   async doMigrate() {
     await vscode.workspace.fs.createDirectory(
-      vscode.Uri.parse(this.getFolderPath())
+      vscode.Uri.joinPath(this.#context.globalStorageUri, "db")
     );
+
     const query = migrationQuery;
     await executeSQLiteCommand({
       sqliteInvoker: this.#sqliteInvoker,
