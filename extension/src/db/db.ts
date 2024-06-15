@@ -98,9 +98,9 @@ class DB {
         );
       }
     }
-    this.doMigrate();
-    this.#sqliteInvoker = sqliteInvoker;
     this.#context = context;
+    this.#sqliteInvoker = sqliteInvoker;
+    this.doMigrate();
   }
   async getWorkspaces() {
     const rawOut = await executeSQLiteCommand({
