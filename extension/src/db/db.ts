@@ -90,11 +90,15 @@ class DB {
       try {
         execSync("sqlite3 --version");
       } catch (err) {
+        vscode.window.showErrorMessage(
+          "Timey: sqlite3 command not availible on the machine! You can install it here: https://www.sqlite.org/download.html. Don't forget to put it in PATH availble to vscode"
+        );
         throw new Error(
           "sqlite3 command not availible on the machine! You can install it here: https://www.sqlite.org/download.html. Don't forget to put it in PATH"
         );
       }
     }
+    this.doMigrate();
     this.#sqliteInvoker = sqliteInvoker;
     this.#context = context;
   }
